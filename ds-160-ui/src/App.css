@@ -1,0 +1,16 @@
+@import '~antd/dist/antd.css';
+
+.App {
+  text-align: center;
+}
+.main-table {
+  width: 80%;
+  margin: auto;
+}
+.table-input {
+  width: 80%;
+  left: -12px;
+}
+.table-submit-btn {
+  left: -16px;
+}
