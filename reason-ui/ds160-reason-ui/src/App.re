@@ -1,7 +1,13 @@
 [%bs.raw {|require('./App.css')|}];
-type state = {clientData: option(array(ClientData.client))};
+type state = {
+  clientData: option(array(ClientData.client)),
+  inputName: option(string),
+  inputSheet: option(string)
+};
 type action =
-  | Loaded(array(ClientData.client));
+  | Submit(array(ClientData.client))
+  | InputNameChange(string)
+  | InputSheetChange(string);
 
 let component = ReasonReact.reducerComponent("App");
 
@@ -23,22 +29,33 @@ let dummyClients: array(ClientData.client) = [|
 let make = (_children) => {
   ...component,
   initialState: () =>{
-    clientData: Some(dummyClients)
+    clientData: Some(dummyClients),
+    inputName: None,
+    inputSheet: None
   },
-  reducer: (action, _state) =>{
+  reducer: (action, state) =>{
     switch action{
-    | Loaded(loadedClient) =>
+    | Submit(loadedClient) =>
+      Js.log("clicked")
+      Js.log(state.inputName)
+      Js.log(state.inputSheet)
       ReasonReact.Update({
+      ...state,
       clientData: Some(loadedClient)
+    })
+    | InputNameChange(newName) =>
+      ReasonReact.Update({
+      ...state,
+      inputName: Some(newName)
+    })
+    | InputSheetChange(newSheet) =>
+      ReasonReact.Update({
+      ...state,
+      inputSheet: Some(newSheet)
     })
     }
   },
   render: (self) =>{
-    let loadReposButton =
-    <button onClick=((_event) => self.send(Loaded(dummyClients)))>
-        {ReasonReact.string("Load Repos")}
-  </button>;
-
     let clientRow =
       switch(self.state.clientData){
       | Some(clients) => ReasonReact.array(
@@ -47,13 +64,12 @@ let make = (_children) => {
         clients
         )
       )
-      | None => loadReposButton
+      | None => <div>(ReasonReact.string("No Data"))</div>
       };
 
     <div className="App">
-        (ReasonReact.string("Hello World"))
   <table className="table">
-    <thead>
+    <thead className="thead-light">
       <tr>
         <th scope="col">(ReasonReact.string("Name"))</th>
         <th scope="col">(ReasonReact.string("Summary Sheet"))</th>
@@ -63,9 +79,9 @@ let make = (_children) => {
     </thead>
     <tbody>
       <tr>
-        <td><input className="table-input" placeholder="Client Name"/></td>
-        <td><input className="table-input" placeholder="Summary Sheet URL"/></td>
-        <td><button className="table-submit-btn">(ReasonReact.string("Create New Application"))</button></td>
+        <td><input className="table-input" placeholder="Client Name" onChange=((event) => self.send(InputNameChange(ReactEvent.Form.target(event)##value)))/></td>
+        <td><input className="table-input" placeholder="Summary Sheet URL" onChange=((event) => self.send(InputSheetChange(ReactEvent.Form.target(event)##value)))/></td>
+        <td><button className="table-submit-btn" onClick=((_event) => self.send(Submit(dummyClients)))>(ReasonReact.string("Create New Application"))</button></td>
       </tr>
      {clientRow}
     </tbody>
