@@ -1,3 +1,17 @@
+/*open BsReactstrap;
+
+  let component = ReasonReact.statelessComponent("SomeComponent");
+
+  let make = (~onChange, _children) => {
+    ...component,
+
+    render: _self => {
+      <Button color="primary" size="lg" onClick=(_e => Js.log("Hi!"))>
+          (ReasonReact.string("Hello"))
+    </Button>
+    }
+  };*/
+
 [%bs.raw {|require('./App.css')|}];
 type state = {
   clientData: option(array(ClientData.client)),
@@ -15,50 +29,39 @@ type action =
 let component = ReasonReact.reducerComponent("App");
 
 let dummyClients: array(ClientData.client) = [|
-{
-  name: "Yuki",
-  sheet: "https://google.com.example",
-  applicationId: "A12345",
-  time: "9/1/2018",
-},
-{
-  name: "YAN",
-  sheet: "https://google.com.example",
-  applicationId: "A12345555",
-  time: "9/3/2018",
-}
-|]
+  {
+    name: "Yuki",
+    sheet: "https://google.com.example",
+    applicationId: "A12345",
+    time: "9/1/2018",
+  },
+  {
+    name: "YAN",
+    sheet: "https://google.com.example",
+    applicationId: "A12345555",
+    time: "9/3/2018",
+  },
+|];
 
-let make = (_children) => {
+let make = _children => {
   ...component,
-  initialState: () =>{
+  initialState: () => {
     clientData: Some(dummyClients),
     inputName: None,
-    inputSheet: None
+    inputSheet: None,
+    isLoggedin: false,
   },
-  reducer: (action, state) =>{
-    switch action{
+  reducer: (action, state) =>
+    switch (action) {
     | Submit(loadedClient) =>
-      Js.log("clicked")
-      Js.log(state.inputName)
-      Js.log(state.inputSheet)
-      ReasonReact.Update({
-      ...state,
-      clientData: Some(loadedClient)
-    })
+      Js.log("clicked");
+      Js.log(state.inputName);
+      Js.log(state.inputSheet);
+      ReasonReact.Update({...state, clientData: Some(loadedClient)});
     | InputNameChange(newName) =>
-      ReasonReact.Update({
-      ...state,
-      inputName: Some(newName)
-    })
+      ReasonReact.Update({...state, inputName: Some(newName)})
     | InputSheetChange(newSheet) =>
-      ReasonReact.Update({
-      ...state,
-      inputSheet: Some(newSheet)
-    })
-    }
-  },
-  render: (self) =>{
+      ReasonReact.Update({...state, inputSheet: Some(newSheet)})
     | Login =>
       Js.log("CheckLogin in Server: if ture/ else");
       ReasonReact.Update({...state, isLoggedin: true});
@@ -66,15 +69,18 @@ let make = (_children) => {
       ReasonReact.SideEffects((_self => Js.log("animation")))
     },
   didMount: self => self.send(Login),
+  render: self => {
     let clientRow =
-      switch(self.state.clientData){
-      | Some(clients) => ReasonReact.array(
+      switch (self.state.clientData) {
+      | Some(clients) =>
+        ReasonReact.array(
           Array.map(
-        (clientInfo: ClientData.client) => <Client key=clientInfo.applicationId clientInfo=clientInfo />,
-        clients
+            (clientInfo: ClientData.client) =>
+              <Client key={clientInfo.applicationId} clientInfo />,
+            clients,
+          ),
         )
-      )
-      | None => <div>(ReasonReact.string("No Data"))</div>
+      | None => <div> {ReasonReact.string("No Data")} </div>
       };
 
     <div className="App">
