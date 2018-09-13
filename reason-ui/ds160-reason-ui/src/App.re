@@ -12,6 +12,8 @@
     }
   };*/
 
+let x = ReasonApollo.Provider.make;
+
 [%bs.raw {|require('./App.css')|}];
 type state = {
   clientData: option(array(ClientData.client)),
@@ -84,6 +86,7 @@ let make = _children => {
       };
 
     <div className="App">
+      <Graphqltest1 />
       {
         self.state.isLoggedin ?
           <table className="table">
