@@ -1,11 +1,13 @@
 {
   "name": "reason-scripts",
-  "sources": ["src"],
+  "sources": ["src", "lib"],
   "bs-dependencies": [
     "reason-react",
     "@glennsl/bs-jest",
-    "@ahrefs/bs-reactstrap"
+    "@ahrefs/bs-reactstrap",
+    "reason-apollo"
   ],
+  "ppx-flags": ["graphql_ppx/ppx"],
   "reason": {
     "react-jsx": 2
   },
