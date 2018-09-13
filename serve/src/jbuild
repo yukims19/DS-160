@@ -1,0 +1,42 @@
+(jbuild_version 1)
+
+(copy_files support/*.{re{,i},ml{,i}})
+(copy_files model/*.{re{,i},ml{,i}})
+
+(executable
+ ((name ds160)
+  (flags
+    (:standard
+      -w -30 ;; disable for Stripe's atdgen
+      -w -32 ;; too noisy for atd codegen
+      -w -9  ;; labels not bound
+      -w -6  ;; omitted labels
+      -w -39 ;; unused rec flag (yojson does this)
+      -warn-error -33-27-39-8-26
+    )
+  )
+  (preprocess (pps (ppx_deriving.std ppx_deriving_yojson)))
+  (libraries (async
+              atdgen
+              cohttp.async
+              core
+              cryptokit
+              curl
+              dispatch
+              ezgzip
+              ezxmlm
+              graphql-async
+              httpaf-async
+              lambdasoup
+              nocrypto.unix
+              postgresql
+              ppx_deriving_yojson
+              ppx_deriving_yojson.runtime
+              ptime
+              re.pcre
+              rresult
+              safepass
+              uri
+              uuidm
+              uutf
+              yojson))))
