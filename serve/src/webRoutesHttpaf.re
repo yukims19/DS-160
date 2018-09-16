@@ -53,11 +53,12 @@ let sessionlessHeaders = Httpaf.Headers.empty;
 
 open Graphql_async;
 
-let executeQuery = (queryBody, _variables) => {
-  let ctx = ();
+let executeQuery = (connPool, queryBody, variables) => {
+  let ctx = DsSchema.{db: connPool};
   let r = Graphql_parser.parse(queryBody);
   switch (r) {
-  | Ok(query) => Graphql_async.Schema.execute(SchemaTest.schema, ctx, query)
+  | Ok(query) =>
+    Graphql_async.Schema.execute(DsSchema.schema, ctx, ~variables, query)
   | Error(err) => failwith(err)
   };
 };
@@ -87,10 +88,26 @@ let dynamicQueryHandler = (~readOnly as _, _keys, _rest, request) => {
   let {bodyString} = request;
   let bodyJson = Yojson.Basic.from_string(bodyString);
   let {req} = request;
+
   let headers = getCORSHeaders(req);
   let queryString =
     Yojson.Basic.Util.(bodyJson |> member("query") |> to_string);
-  executeQuery(queryString, None)
+  let queryVariablesJson =
+    try (
+      Yojson.Basic.(
+        (bodyString == "" ? "{}" : bodyString)
+        |> from_string
+        |> Util.member("variables")
+        |> Util.to_assoc
+      )
+    ) {
+    | Yojson.Basic.Util.Type_error(_, _) => []
+    };
+
+  let queryVariables = (
+    queryVariablesJson :> list((string, Graphql_parser.const_value))
+  );
+  executeQuery(request.dbConn, queryString, queryVariables)
   >>| (
     result =>
       switch (result) {
