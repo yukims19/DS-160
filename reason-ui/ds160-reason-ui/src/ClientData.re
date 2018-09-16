@@ -1,6 +1,9 @@
 type client = {
-  name: string,
-  sheet: string,
-  applicationId: string,
-  time: string,
+  .
+  "id": int,
+  "name": string,
+  "dataSheet": string,
+  "applicationId": string,
+  "createdAt": string,
+  "updatedAt": string,
 };
