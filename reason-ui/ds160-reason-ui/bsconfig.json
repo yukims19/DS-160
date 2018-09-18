@@ -5,7 +5,8 @@
     "reason-react",
     "@glennsl/bs-jest",
     "@ahrefs/bs-reactstrap",
-    "reason-apollo"
+    "reason-apollo",
+    "bs-fetch"
   ],
   "ppx-flags": ["graphql_ppx/ppx"],
   "reason": {
