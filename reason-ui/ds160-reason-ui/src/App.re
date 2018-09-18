@@ -129,6 +129,10 @@ let make = _children => {
                   />
                 </td>
                 <td>
+                  <AddNewClientMutation
+                    clientName={self.state.inputName}
+                    summarySheet={self.state.inputSheet}
+                  />
                   <button
                     className="table-submit-btn"
                     onClick={_event => self.send(Submit(dummyClients))}>

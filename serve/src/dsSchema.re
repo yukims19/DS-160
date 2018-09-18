@@ -82,6 +82,36 @@ let schema =
         ~resolve=(ctx, (), username, password) => {
           let userDBResults =
             DsUserModel.byUsernameAndPassword(ctx.db, username, password);
+      ~mutations=[
+        io_field(
+          "addNewClient",
+          ~typ=non_null(string),
+          ~args=
+            Arg.[
+              arg("name", ~typ=non_null(string)),
+              arg("userId", ~typ=non_null(string)),
+              arg("dataSheet", ~typ=non_null(string)),
+            ],
+          ~resolve=(ctx, (), name, userId, dataSheet) => {
+            let addClientResults =
+              DsUserModel.addNewClient(ctx.db, userId, name, dataSheet);
+
+            let returnResults =
+              addClientResults
+              >>= (
+                result =>
+                  Deferred.return(result)
+                  /*
+                    switch (result) {
+                   | Ok(value) => Deferred.return(value)
+                    | Error(value) => Deferred.return(value)
+                    }
+                   */
+              );
+            returnResults;
+          },
+        ),
+      ],
 
           let returnResults =
             userDBResults

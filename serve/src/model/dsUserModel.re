@@ -35,6 +35,29 @@ let byUsernameAndPassword =
   );
 };
 
+let addNewClient = (conn: OneDb.connPool, userId, name, datasheet) => {
+  let time = Unix.gettimeofday();
+  let currentTime = Ptime.of_float_s(time);
+  let insertingTime =
+    switch (currentTime) {
+    | Some(time) => Ptime.to_rfc3339(time)
+    | None => ""
+    };
+  let params = [|userId, name, datasheet, insertingTime, insertingTime|];
+  OP.sendPrepared(conn, ~params, ~name="ds_add_new_client", ())
+  >>| (
+    res => {
+      let status = res#status;
+      Postgresql.(
+        switch (status) {
+        | Command_ok => Result.Ok("Success")
+        | _ => Result.Error("Couldn't create user")
+        }
+      );
+    }
+  );
+};
+
 let preparedStatements =
   OP.[
     {
@@ -42,6 +65,13 @@ let preparedStatements =
       statement:
         Printf.sprintf(
           "SELECT * FROM users WHERE username = $1 AND password = $2",
+        ),
+    },
+    {
+      name: "ds_add_new_client",
+      statement:
+        Printf.sprintf(
+          "INSERT INTO clients(user_id , name , data_sheet, time_created , time_last_updated) VALUES ($1, $2, $3, $4, $5);",
         ),
     },
   ];
