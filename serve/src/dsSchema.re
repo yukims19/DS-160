@@ -1,13 +1,6 @@
 open Async;
 open Graphql_async;
 
-type user = {
-  id: int,
-  username: string,
-  password: string,
-  status: bool,
-};
-
 type client = {
   id: int,
   name: string,
@@ -17,7 +10,32 @@ type client = {
   updatedAt: option(Ptime.t),
 };
 
-type gqlContext = {db: OneDb.connPool};
+type gqlContext = {
+  db: OneDb.connPool,
+  user: option(DsUserModel.user),
+};
+
+let user =
+  Schema.(
+    obj("User", ~fields=_storyType =>
+      [
+        field(
+          "id",
+          ~args=Arg.([]),
+          ~typ=non_null(int),
+          ~resolve=(_ctx, u: DsUserModel.user) =>
+          u.id
+        ),
+        field(
+          "username",
+          ~args=Arg.([]),
+          ~typ=non_null(string),
+          ~resolve=(_ctx, u: DsUserModel.user) =>
+          u.username
+        ),
+      ]
+    )
+  );
 
 let client =
   Schema.(
@@ -102,30 +120,7 @@ let schema =
         ),
       ],
       [
-        io_field(
-          "users",
-          ~args=
-            Arg.[
-              arg("username", ~typ=non_null(string)),
-              arg("password", ~typ=non_null(string)),
-            ],
-          ~typ=bool,
-          ~resolve=(ctx, (), username, password) => {
-            let userDBResults =
-              DsUserModel.byUsernameAndPassword(ctx.db, username, password);
-
-            let returnResults =
-              userDBResults
-              >>= (
-                result =>
-                  switch (result) {
-                  | Some(_result) => Deferred.return(Ok(Some(true)))
-                  | None => Deferred.return(Ok(Some(false)))
-                  }
-              );
-            returnResults;
-          },
-        ),
+        field("me", ~args=Arg.([]), ~typ=user, ~resolve=(ctx, ()) => ctx.user),
         io_field(
           "clients",
           ~typ=list(non_null(client)),
