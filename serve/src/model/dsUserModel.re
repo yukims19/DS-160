@@ -8,6 +8,33 @@ type user = {
   username: string,
   password: string,
 };
+type client = {
+  id: int,
+  userId: int,
+  name: string,
+  dataSheet: string,
+  applicationId: string,
+  createdAt: string,
+  updatedAt: string,
+};
+
+let ofDbResult = tuple =>
+  switch (tuple) {
+  | [|id, userId, name, dataSheet, applicationId, createdAt, updatedAt|] =>
+    let id = int_of_string(id);
+    let userId = int_of_string(userId);
+    {id, userId, name, dataSheet, applicationId, createdAt, updatedAt};
+  | resFields =>
+    failPublic(
+      ~internal=
+        Printf.sprintf(
+          "Invalid DB tuple shape for oneUser: fields=%s",
+          String.concat(", ", Array.to_list(resFields)),
+        ),
+      ~public="We hit an internal error",
+      (),
+    )
+  };
 
 let byUsernameAndPassword =
     (conn: OneDb.connPool, username: string, password: string)
@@ -33,6 +60,12 @@ let byUsernameAndPassword =
         }
     )
   );
+};
+
+let allClientsByUserId = (conn: OneDb.connPool, userId) => {
+  let params = [|userId|];
+  OP.sendPrepared(conn, ~params, ~name="ds_all_clients_by_userid", ())
+  >>| (res => Array.map(record => ofDbResult(record), res#get_all));
 };
 
 let addNewClient = (conn: OneDb.connPool, userId, name, datasheet) => {
@@ -66,6 +99,10 @@ let preparedStatements =
         Printf.sprintf(
           "SELECT * FROM users WHERE username = $1 AND password = $2",
         ),
+    },
+    {
+      name: "ds_all_clients_by_userid",
+      statement: Printf.sprintf("SELECT * FROM clients WHERE user_id = $1"),
     },
     {
       name: "ds_add_new_client",

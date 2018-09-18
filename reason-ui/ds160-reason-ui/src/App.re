@@ -115,7 +115,7 @@ let make = _children => {
                   </button>
                 </td>
               </tr>
-              clientRow
+              <ClientTableQuery />
             </tbody>
           </table> :
           <form>

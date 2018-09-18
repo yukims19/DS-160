@@ -1,8 +1,8 @@
 [@bs.module] external gql: ReasonApolloTypes.gql = "graphql-tag";
 module GetClientTable = [%graphql
   {|
-     query{
-     clients{
+     query($userId: String!){
+     clients(userId: $userId){
      id
      name
      dataSheet
@@ -15,63 +15,80 @@ module GetClientTable = [%graphql
 ];
 
 module GetClientTableQuery = ReasonApollo.CreateQuery(GetClientTable);
-
-/*
- let dummyClients: array(ClientData.client) = [|
-   {
-     name: "Yuki",
-     sheet: "https://google.com.example",
-     applicationId: "A12345",
-     time: "9/1/2018",
-   },
-   {
-     name: "YAN",
-     sheet: "https://google.com.example",
-     applicationId: "A12345555",
-     time: "9/3/2018",
-   },
- |];
-    */
-
 let component = ReasonReact.statelessComponent("ClientTableQuery");
 
 let make = _children => {
   ...component,
-  render: _self =>
-    <div>
-      <GetClientTableQuery>
-        ...{
-             ({result}) =>
-               switch (result) {
-               | Loading => <div> {"Loading" |> ReasonReact.string} </div>
-               | Error(e) => <div> {ReasonReact.string(e##message)} </div>
-               | Data(response) =>
-                 switch (response##clients) {
-                 | Some(clients) =>
-                   <tbody>
-                     {
-                       clients
-                       |> Array.map(clientInfo =>
-                            <Client
-                              key={string_of_int(clientInfo##id)}
-                              clientInfo
-                            />
-                          )
-                       |> ReasonReact.array
-                     }
-                   </tbody>
-                 | None => <div />
-                 }
-               /*
-                ReasonReact.array(
-                  Array.map(
-                    clientInfo =>
-                      <Client key={clientInfo.applicationId} clientInfo />,
-                      response##clients,
-                  ),
-                )*/
+  render: _self => {
+    let getClientTableQuery = GetClientTable.make(~userId="1", ());
+    <GetClientTableQuery variables=getClientTableQuery##variables>
+      ...{
+           ({result}) =>
+             switch (result) {
+             | Loading => <div> {"Loading" |> ReasonReact.string} </div>
+             | Error(e) => <div> {ReasonReact.string(e##message)} </div>
+             | Data(response) =>
+               switch (response##clients) {
+               | Some(clients) =>
+                 clients
+                 |> Array.map(clientInfo =>
+                      <Client
+                        key={string_of_int(clientInfo##id)}
+                        clientInfo
+                      />
+                    )
+                 |> ReasonReact.array
+
+               | None => <div />
                }
-           }
-      </GetClientTableQuery>
-    </div>,
+             }
+         }
+    </GetClientTableQuery>;
+  },
 };
+
+/*
+    module SignIn = [%graphql
+   {|
+      mutation signIn($email: String!, $password: String!, $rememberMe: Boolean!) {
+      signIn(email: $email, password: $password, rememberMe: $rememberMe) {
+      success
+      user {
+  email
+      title
+      birthday
+      }
+      }
+      }
+      |}
+ ];
+
+ module SignInMutation = ReasonApollo.CreateMutation(SignIn);
+
+ let make = _children => {
+   render: (self) =>
+     <SignInMutation>
+       ...{
+            (signInAction /* Mutation to call */, _) => {
+              /* Result of your mutation */
+
+              let signInDetails = SignIn.make(~email="yuki", ());
+              <div>
+                <button
+                  onClick={
+                    _mouseEvent =>
+                      signInAction(
+                        ~variables=signInDetails##variables,
+                        ~refetchQueries=[|"getAllPokemons"|],
+                        (),
+                      )
+                      |> Js.Promise.then_(_, (result => self.send(SignIn(result))))
+                  }>
+                  {ReasonReact.string("Add Pokemon")}
+                </button>
+              </div>;
+            }
+          }
+     </SignInMutation>,
+ };
+ */

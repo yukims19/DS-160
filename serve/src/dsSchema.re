@@ -70,18 +70,7 @@ let client =
 
 let schema =
   Schema.(
-    schema([
-      io_field(
-        "users",
-        ~args=
-          Arg.[
-            arg("username", ~typ=non_null(string)),
-            arg("password", ~typ=non_null(string)),
-          ],
-        ~typ=bool,
-        ~resolve=(ctx, (), username, password) => {
-          let userDBResults =
-            DsUserModel.byUsernameAndPassword(ctx.db, username, password);
+    schema(
       ~mutations=[
         io_field(
           "addNewClient",
@@ -112,43 +101,77 @@ let schema =
           },
         ),
       ],
+      [
+        io_field(
+          "users",
+          ~args=
+            Arg.[
+              arg("username", ~typ=non_null(string)),
+              arg("password", ~typ=non_null(string)),
+            ],
+          ~typ=bool,
+          ~resolve=(ctx, (), username, password) => {
+            let userDBResults =
+              DsUserModel.byUsernameAndPassword(ctx.db, username, password);
 
-          let returnResults =
-            userDBResults
-            >>= (
-              result =>
-                switch (result) {
-                | Some(_result) => Deferred.return(Ok(Some(true)))
-                | None => Deferred.return(Ok(Some(false)))
+            let returnResults =
+              userDBResults
+              >>= (
+                result =>
+                  switch (result) {
+                  | Some(_result) => Deferred.return(Ok(Some(true)))
+                  | None => Deferred.return(Ok(Some(false)))
+                  }
+              );
+            returnResults;
+          },
+        ),
+        io_field(
+          "clients",
+          ~typ=list(non_null(client)),
+          ~args=Arg.[arg("userId", ~typ=non_null(string))],
+          ~resolve=(ctx, (), userId) => {
+            let clientDBResults =
+              DsUserModel.allClientsByUserId(ctx.db, userId);
+            let time = Unix.gettimeofday();
+
+            let returnResults =
+              clientDBResults
+              >>= (
+                result => {
+                  let clientList =
+                    Array.map(
+                      (res: DsUserModel.client) => {
+                        let returnClient = {
+                          id: res.id,
+                          name: res.name,
+                          dataSheet: res.dataSheet,
+                          applicationId: res.applicationId,
+                          createdAt: Ptime.of_float_s(time),
+                          updatedAt: Ptime.of_float_s(time),
+                        };
+
+                        returnClient;
+                      },
+                      result,
+                    )
+                    |> Array.to_list;
+
+                  Ok(Some(clientList)) |> Deferred.return;
                 }
-            );
-          returnResults;
-        },
-      ),
-      field(
-        "clients",
-        ~typ=list(non_null(client)),
-        ~args=Arg.([]),
-        ~resolve=(_ctx, ()) => {
-          let time = Unix.gettimeofday();
-          let re = [
-            {
-              id: 1,
-              name: "Client1",
-              dataSheet: "www.1.com",
-              applicationId: "A1234",
-              createdAt: Ptime.of_float_s(time),
-              updatedAt: Ptime.of_float_s(time),
-            },
-          ];
-          Some(re);
-        },
-      ),
-      field(
-        "greeter", ~typ=non_null(string), ~args=Arg.([]), ~resolve=(_ctx, ()) =>
-        "Hello Just Greeting"
-      ),
-    ])
+              );
+            returnResults;
+          },
+        ),
+        field(
+          "greeter",
+          ~typ=non_null(string),
+          ~args=Arg.([]),
+          ~resolve=(_ctx, ()) =>
+          "Hello Just Greeting"
+        ),
+      ],
+    )
   );
 
 /*
@@ -179,5 +202,5 @@ let schema =
    ),
    ]
    )
-   );
+   ;)
  */
