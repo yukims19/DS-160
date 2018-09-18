@@ -4,7 +4,7 @@ let registerAllQueries = (conn, connId) =>
   ModelCommon.insertPreparedStatements(
     ~conn,
     ~connId,
-    ~statements=List.concat([]),
+    ~statements=List.concat([DsUserModel.preparedStatements]),
   );
 
 let initLogs = () => OneLog.setup();
