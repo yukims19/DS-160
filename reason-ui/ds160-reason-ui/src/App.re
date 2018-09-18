@@ -1,20 +1,8 @@
-/*open BsReactstrap;
-
-  let component = ReasonReact.statelessComponent("SomeComponent");
-
-  let make = (~onChange, _children) => {
-    ...component,
-
-    render: _self => {
-      <Button color="primary" size="lg" onClick=(_e => Js.log("Hi!"))>
-          (ReasonReact.string("Hello"))
-    </Button>
-    }
-  };*/
-
-let x = ReasonApollo.Provider.make;
-
 [%bs.raw {|require('./App.css')|}];
+
+type result = {data: user}
+and user = {users: bool};
+
 type state = {
   clientData: option(array(ClientData.client)),
   inputName: option(string),
@@ -25,25 +13,12 @@ type action =
   | Submit(array(ClientData.client))
   | InputNameChange(string)
   | InputSheetChange(string)
-  | Login
+  | CheckLogin(bool)
   | ClickAnimation;
 
 let component = ReasonReact.reducerComponent("App");
 
-let dummyClients: array(ClientData.client) = [|
-  {
-    name: "Yuki",
-    sheet: "https://google.com.example",
-    applicationId: "A12345",
-    time: "9/1/2018",
-  },
-  {
-    name: "YAN",
-    sheet: "https://google.com.example",
-    applicationId: "A12345555",
-    time: "9/3/2018",
-  },
-|];
+let dummyClients: array(ClientData.client) = [||];
 
 let make = _children => {
   ...component,
