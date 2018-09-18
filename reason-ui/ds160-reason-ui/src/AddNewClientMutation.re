@@ -8,11 +8,10 @@ module AddNewClient = [%graphql
 ];
 
 module AddNewClientMutation = ReasonApollo.CreateMutation(AddNewClient);
-open BsReactstrap;
 
 let component = ReasonReact.statelessComponent("AddNewClientQuery");
 
-let make = (~clientName, ~summarySheet, _children) => {
+let make = (~clientName, ~summarySheet, ~updateClientRows, _children) => {
   ...component,
   render: _ => {
     let name =

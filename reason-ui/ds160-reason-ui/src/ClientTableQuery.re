@@ -17,7 +17,7 @@ module GetClientTable = [%graphql
 module GetClientTableQuery = ReasonApollo.CreateQuery(GetClientTable);
 let component = ReasonReact.statelessComponent("ClientTableQuery");
 
-let make = _children => {
+let make = (~updateClientRows, _children) => {
   ...component,
   render: _self => {
     let getClientTableQuery = GetClientTable.make(~userId="1", ());
@@ -30,6 +30,7 @@ let make = _children => {
              | Data(response) =>
                switch (response##clients) {
                | Some(clients) =>
+                 /*                 updateClientRows(clients);*/
                  clients
                  |> Array.map(clientInfo =>
                       <Client
