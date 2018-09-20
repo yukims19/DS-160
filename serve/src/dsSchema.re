@@ -13,6 +13,7 @@ type client = {
 type gqlContext = {
   db: OneDb.connPool,
   user: option(DsUserModel.user),
+  sessionId: Uuidm.t,
 };
 
 let user =
@@ -22,9 +23,9 @@ let user =
         field(
           "id",
           ~args=Arg.([]),
-          ~typ=non_null(int),
+          ~typ=non_null(string),
           ~resolve=(_ctx, u: DsUserModel.user) =>
-          u.id
+          Uuidm.to_string(u.id)
         ),
         field(
           "username",
@@ -114,6 +115,45 @@ let schema =
                     | Error(value) => Deferred.return(value)
                     }
                    */
+              );
+            returnResults;
+          },
+        ),
+        io_field(
+          "login",
+          ~typ=non_null(string),
+          ~args=
+            Arg.[
+              arg("username", ~typ=non_null(string)),
+              arg("password", ~typ=non_null(string)),
+            ],
+          ~resolve=(ctx, (), username, password) => {
+            let user =
+              DsUserModel.byUsernameAndPassword(ctx.db, username, password);
+            let returnResults =
+              user
+              >>= (
+                result =>
+                  switch (result) {
+                  | Some(user) =>
+                    DsSession.setUserIdBySessionId(
+                      ctx.db,
+                      ctx.sessionId,
+                      user.id,
+                    )
+                    >>= (
+                      result =>
+                        switch (result) {
+                        | Ok(message) => Deferred.return(Ok(message))
+                        | Error(message) => Deferred.return(Error(message))
+                        }
+                    )
+
+                  /*                    Deferred.return(
+                                          Ok("Successfully logged in as " ++ user.username),
+                                        );*/
+                  | None => Deferred.return(Error("No User Found"))
+                  }
               );
             returnResults;
           },

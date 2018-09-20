@@ -20,7 +20,7 @@ let component = ReasonReact.reducerComponent("App");
 let dummyClients: array(ClientData.client) = [||];
 
 let loginForm =
-  <form>
+  <div>
     <div className="form-group">
       <input
         className="form-control"
@@ -35,10 +35,12 @@ let loginForm =
         placeholder="Password"
       />
     </div>
-    <button className="btn btn-primary">
-      /*              onClick={_event => self.send(CheckLogin(status))}*/
-       {ReasonReact.string("Submit")} </button>
-  </form>;
+    <LoginMutation />
+  </div>;
+
+/*    <button className="btn btn-primary">
+             onClick={_event => self.send(CheckLogin(status))}
+      {ReasonReact.string("Submit")} </button>*/
 
 let make = _children => {
   ...component,
