@@ -53,15 +53,75 @@ let sessionlessHeaders = Httpaf.Headers.empty;
 
 open Graphql_async;
 
-let executeQuery = (connPool, queryBody, variables) => {
-  let ctx = DsSchema.{db: connPool};
-  let r = Graphql_parser.parse(queryBody);
-  switch (r) {
-  | Ok(query) =>
-    Graphql_async.Schema.execute(DsSchema.schema, ctx, ~variables, query)
-  | Error(err) => failwith(err)
-  };
+let fetchOrCreateSession = (connPool, headers) => {
+  let sessionId = Httpaf.Headers.get(headers, "Cookie");
+  print_endline(
+    "Headers:::::::~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    ++ Headers.to_string(headers),
+  );
+  DsSession.findOrCreateSessionByCookie(connPool, sessionId);
+  /*
+   (
+     switch (sessionId) {
+     | Some(sessionId) =>
+       print_endline("Reached ExecuteqQuery, Cookie:" ++ sessionId)
+     | None => print_endline("No Cookies, No sessionId")
+     }
+   );
+   */
 };
+
+let createGqlCtx = (connPool, headers) =>
+  fetchOrCreateSession(connPool, headers)
+  >>= (
+    session => {
+      let userId = session.userId;
+      print_endline(
+        "Found or Created sessionId:" ++ Uuidm.to_string(session.id),
+      );
+      switch (userId) {
+      | Some(userId) =>
+        print_endline("Found some userId");
+        DsUserModel.getUserById(connPool, userId)
+        >>= (
+          fetchedUser => {
+            let ctx =
+              DsSchema.{
+                db: connPool,
+                user: fetchedUser,
+                sessionId: session.id,
+              };
+            switch (ctx.user) {
+            | Some(user) =>
+              print_endline("Found a user" ++ Uuidm.to_string(user.id))
+            | None =>
+              print_endline(
+                "No user found with the userId" ++ Uuidm.to_string(userId),
+              )
+            };
+            Deferred.return(ctx);
+          }
+        );
+      | None =>
+        print_endline("No userId in the session table found");
+        let ctx = DsSchema.{db: connPool, user: None, sessionId: session.id};
+        Deferred.return(ctx);
+      };
+    }
+  );
+
+let executeQuery = (connPool, queryBody, variables, headers: Headers.t) =>
+  createGqlCtx(connPool, headers)
+  >>= (
+    ctx => {
+      let r = Graphql_parser.parse(queryBody);
+      switch (r) {
+      | Ok(query) =>
+        Graphql_async.Schema.execute(DsSchema.schema, ctx, ~variables, query)
+      | Error(err) => failwith(err)
+      };
+    }
+  );
 
 let requestOrigin = (req: Httpaf.Request.t) =>
   switch (Httpaf.Headers.get(req.headers, "origin")) {
@@ -84,40 +144,100 @@ let getCORSHeaders = req => {
   headers;
 };
 
+let toCookieHeaders =
+    (
+      ~discard=false,
+      ~path=?,
+      ~domain=?,
+      ~secure=?,
+      ~http_only=?,
+      ~expireDate,
+      cookieKey: string,
+      sessionKey: string,
+    ) => {
+  let cookie = (cookieKey, sessionKey)
+  and expiration =
+    switch (discard) {
+    | false => `Max_age(Int64.of_float(Ptime.to_float_s(expireDate)))
+    | true => `Session
+    };
+  let (hdr, val_) =
+    Cohttp.Cookie.Set_cookie_hdr.serialize(
+      Cohttp.Cookie.Set_cookie_hdr.make(
+        ~expiration,
+        ~path?,
+        ~domain?,
+        ~secure?,
+        ~http_only?,
+        cookie,
+      ),
+    );
+  [(hdr, val_), ("vary", "cookie")];
+};
+
 let dynamicQueryHandler = (~readOnly as _, _keys, _rest, request) => {
   let {bodyString} = request;
   let bodyJson = Yojson.Basic.from_string(bodyString);
   let {req} = request;
+  let sessionIo = fetchOrCreateSession(request.dbConn, req.headers);
 
-  let headers = getCORSHeaders(req);
-  let queryString =
-    Yojson.Basic.Util.(bodyJson |> member("query") |> to_string);
-  let queryVariablesJson =
-    try (
-      Yojson.Basic.(
-        (bodyString == "" ? "{}" : bodyString)
-        |> from_string
-        |> Util.member("variables")
-        |> Util.to_assoc
-      )
-    ) {
-    | Yojson.Basic.Util.Type_error(_, _) => []
-    };
-
-  let queryVariables = (
-    queryVariablesJson :> list((string, Graphql_parser.const_value))
-  );
-  executeQuery(request.dbConn, queryString, queryVariables)
+  let headersCORS = getCORSHeaders(req);
+  sessionIo
   >>| (
-    result =>
-      switch (result) {
-      | Ok(data) =>
-        let jsonString = Yojson.Basic.to_string(data);
-        (headers, `OK, bofs(jsonString));
-      | Error(errorData) =>
-        let jsonString = Yojson.Basic.to_string(errorData);
-        (Headers.empty, `OK, bofs(jsonString));
-      }
+    session => {
+      let headersResponse =
+        Headers.add_list(
+          headersCORS,
+          toCookieHeaders(
+            ~path="/",
+            ~domain="localhost",
+            ~secure=false,
+            ~expireDate=
+              Utils.getExn(
+                "Ptime.of_float for expireDate",
+                Ptime.of_float_s(999999999.0),
+              ),
+            "ds160_sid",
+            Uuidm.to_string(session.id),
+          ),
+        );
+      headersResponse;
+    }
+  )
+  >>= (
+    headersResponse => {
+      print_endline("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+      print_endline(Httpaf.Headers.to_string(headersResponse));
+      let queryString =
+        Yojson.Basic.Util.(bodyJson |> member("query") |> to_string);
+      let queryVariablesJson =
+        try (
+          Yojson.Basic.(
+            (bodyString == "" ? "{}" : bodyString)
+            |> from_string
+            |> Util.member("variables")
+            |> Util.to_assoc
+          )
+        ) {
+        | Yojson.Basic.Util.Type_error(_, _) => []
+        };
+
+      let queryVariables = (
+        queryVariablesJson :> list((string, Graphql_parser.const_value))
+      );
+      executeQuery(request.dbConn, queryString, queryVariables, req.headers)
+      >>| (
+        result =>
+          switch (result) {
+          | Ok(data) =>
+            let jsonString = Yojson.Basic.to_string(data);
+            (headersResponse, `OK, bofs(jsonString));
+          | Error(errorData) =>
+            let jsonString = Yojson.Basic.to_string(errorData);
+            (Headers.empty, `OK, bofs(jsonString));
+          }
+      );
+    }
   );
 };
 
@@ -260,3 +380,20 @@ let routes = (dbConn, reqId, reqd) => {
         )
   );
 };
+/*
+ let username = "yuki";
+ let password = "123";
+
+ let userDBResults =
+ DsUserModel.byUsernameAndPassword(connPool, username, password);
+
+ userDBResults
+ >>= (
+ result => (
+ {
+ let ctx = DsSchema.{db: connPool, user: result, sessionId};
+ Deferred.return(ctx);
+ }:
+ Deferred.t(DsSchema.gqlContext)
+ )
+ )*/
