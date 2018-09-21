@@ -97,12 +97,18 @@ let schema =
           ~args=
             Arg.[
               arg("name", ~typ=non_null(string)),
-              arg("userId", ~typ=non_null(string)),
               arg("dataSheet", ~typ=non_null(string)),
             ],
-          ~resolve=(ctx, (), name, userId, dataSheet) => {
+          ~resolve=(ctx, (), name, dataSheet) =>
+          switch (ctx.user) {
+          | Some(user) =>
             let addClientResults =
-              DsUserModel.addNewClient(ctx.db, userId, name, dataSheet);
+              DsUserModel.addNewClient(
+                ctx.db,
+                Uuidm.to_string(user.id),
+                name,
+                dataSheet,
+              );
 
             let returnResults =
               addClientResults
@@ -110,14 +116,16 @@ let schema =
                 result =>
                   Deferred.return(result)
                   /*
-                    switch (result) {
-                   | Ok(value) => Deferred.return(value)
-                    | Error(value) => Deferred.return(value)
-                    }
+                     switch (result) {
+                     | Ok(value) => Deferred.return(value)
+                     | Error(value) => Deferred.return(value)
+                     }
                    */
               );
             returnResults;
-          },
+
+          | None => Deferred.return(Error("Please login in"))
+          }
         ),
         io_field(
           "login",
@@ -164,10 +172,10 @@ let schema =
         io_field(
           "clients",
           ~typ=list(non_null(client)),
-          ~args=Arg.[arg("userId", ~typ=non_null(string))],
-          ~resolve=(ctx, (), userId) => {
+          ~args=Arg.([]),
+          ~resolve=(ctx: gqlContext, ()) => {
             let clientDBResults =
-              DsUserModel.allClientsByUserId(ctx.db, userId);
+              DsUserModel.allClientsByUserId(ctx.db, ctx.user);
             let time = Unix.gettimeofday();
 
             let returnResults =

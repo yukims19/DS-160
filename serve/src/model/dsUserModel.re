@@ -120,7 +120,12 @@ let getUserById =
   );
 };
 
-let allClientsByUserId = (conn: OneDb.connPool, userId) => {
+let allClientsByUserId = (conn: OneDb.connPool, user: option(user)) => {
+  let userId =
+    switch (user) {
+    | Some(user) => Uuidm.to_string(user.id)
+    | None => ""
+    };
   let params = [|userId|];
   OP.sendPrepared(conn, ~params, ~name="ds_all_clients_by_userid", ())
   >>| (res => Array.map(record => ofDbResult(record), res#get_all));
@@ -134,7 +139,15 @@ let addNewClient = (conn: OneDb.connPool, userId, name, datasheet) => {
     | Some(time) => Ptime.to_rfc3339(time)
     | None => ""
     };
-  let params = [|userId, name, datasheet, insertingTime, insertingTime|];
+  let newId = Uuidm.to_string(Utils.genUuid());
+  let params = [|
+    newId,
+    userId,
+    name,
+    datasheet,
+    insertingTime,
+    insertingTime,
+  |];
   OP.sendPrepared(conn, ~params, ~name="ds_add_new_client", ())
   >>| (
     res => {
