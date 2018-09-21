@@ -11,8 +11,8 @@ type user = {
   lastLoggedIn: option(Ptime.t),
 };
 type client = {
-  id: int,
-  userId: int,
+  id: Uuidm.t,
+  userId: Uuidm.t,
   name: string,
   dataSheet: string,
   applicationId: string,
@@ -23,8 +23,27 @@ type client = {
 let ofDbResult = tuple =>
   switch (tuple) {
   | [|id, userId, name, dataSheet, applicationId, createdAt, updatedAt|] =>
-    let id = int_of_string(id);
-    let userId = int_of_string(userId);
+    let id =
+      switch (Uuidm.of_string(id)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in oneUser (id): " ++ id,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
+
+    let userId =
+      switch (Uuidm.of_string(userId)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in oneUser (id): " ++ userId,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
     {id, userId, name, dataSheet, applicationId, createdAt, updatedAt};
   | resFields =>
     failPublic(

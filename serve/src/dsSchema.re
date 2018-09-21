@@ -2,7 +2,7 @@ open Async;
 open Graphql_async;
 
 type client = {
-  id: int,
+  id: Uuidm.t,
   name: string,
   dataSheet: string,
   applicationId: string,
@@ -42,8 +42,8 @@ let client =
   Schema.(
     obj("Client", ~fields=_storyType =>
       [
-        field("id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=(_ctx, c) =>
-          c.id
+        field("id", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
+          Uuidm.to_string(c.id)
         ),
         field(
           "name", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
