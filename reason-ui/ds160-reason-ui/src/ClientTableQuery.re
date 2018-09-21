@@ -33,10 +33,7 @@ let make = (~updateClientRows, _children) => {
                  /*                 updateClientRows(clients);*/
                  clients
                  |> Array.map(clientInfo =>
-                      <Client
-                        key={string_of_int(clientInfo##id)}
-                        clientInfo
-                      />
+                      <Client clientInfo key=clientInfo##id />
                     )
                  |> ReasonReact.array
 
