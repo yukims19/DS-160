@@ -53,11 +53,6 @@ let sessionlessHeaders = Httpaf.Headers.empty;
 
 open Graphql_async;
 
-let fetchOrCreateSession = (connPool, headers) => {
-  let sessionId = Httpaf.Headers.get(headers, "Cookie");
-  print_endline(
-    "Headers:::::::~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    ++ Headers.to_string(headers),
 let coHttpHeadersOfHttpafHeaders = httpAfHeaders => {
   let headers = ref([]);
   Httpaf.Headers.iter(
@@ -81,15 +76,6 @@ let ofHeader = (conn, cookieFieldKey, header: Cohttp.Header.t) => {
 };
 
   DsSession.findOrCreateSessionByCookie(connPool, sessionId);
-  /*
-   (
-     switch (sessionId) {
-     | Some(sessionId) =>
-       print_endline("Reached ExecuteqQuery, Cookie:" ++ sessionId)
-     | None => print_endline("No Cookies, No sessionId")
-     }
-   );
-   */
 };
 
 let createGqlCtx = (connPool, headers) =>
@@ -227,8 +213,6 @@ let dynamicQueryHandler = (~readOnly as _, _keys, _rest, request) => {
   )
   >>= (
     headersResponse => {
-      print_endline("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-      print_endline(Httpaf.Headers.to_string(headersResponse));
       let queryString =
         Yojson.Basic.Util.(bodyJson |> member("query") |> to_string);
       let queryVariablesJson =
