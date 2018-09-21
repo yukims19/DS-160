@@ -4,7 +4,11 @@ let registerAllQueries = (conn, connId) =>
   ModelCommon.insertPreparedStatements(
     ~conn,
     ~connId,
-    ~statements=List.concat([DsUserModel.preparedStatements]),
+    ~statements=
+      List.concat([
+        DsUserModel.preparedStatements,
+        DsSession.preparedStatements,
+      ]),
   );
 
 let initLogs = () => OneLog.setup();
