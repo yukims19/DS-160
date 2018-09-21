@@ -17,35 +17,10 @@ type action =
 
 let component = ReasonReact.reducerComponent("App");
 
-let dummyClients: array(ClientData.client) = [||];
-
-let loginForm =
-  <div>
-    <div className="form-group">
-      <input
-        className="form-control"
-        id="login-username"
-        placeholder="Username"
-      />
-    </div>
-    <div className="form-group">
-      <input
-        className="form-control"
-        id="login-password"
-        placeholder="Password"
-      />
-    </div>
-    <LoginMutation />
-  </div>;
-
-/*    <button className="btn btn-primary">
-             onClick={_event => self.send(CheckLogin(status))}
-      {ReasonReact.string("Submit")} </button>*/
-
 let make = _children => {
   ...component,
   initialState: () => {
-    clientData: Some(dummyClients),
+    clientData: Some([||]),
     inputName: None,
     inputSheet: None,
   },
@@ -67,7 +42,7 @@ let make = _children => {
   /*  didMount: self => self.send(CheckLogin(true)),*/
   render: self =>
     <div className="App">
-      <LoginGuard ifNotLoggedIn=loginForm>
+      <LoginGuard>
         <table className="table">
           <thead className="thead-light">
             <tr>
