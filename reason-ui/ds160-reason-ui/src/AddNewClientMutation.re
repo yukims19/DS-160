@@ -1,8 +1,8 @@
 [@bs.module] external gql: ReasonApolloTypes.gql = "graphql-tag";
 module AddNewClient = [%graphql
   {|
-     mutation($userId: String!, $name: String!, $dataSheet: String!) {
-     addNewClient(dataSheet: $dataSheet, userId: $userId, name: $name)
+     mutation( $name: String!, $dataSheet: String!) {
+     addNewClient(dataSheet: $dataSheet, name: $name)
      }
      |}
 ];
@@ -28,7 +28,7 @@ let make = (~clientName, ~summarySheet, ~updateClientRows, _children) => {
       ...{
            (mutation, _) => {
              let getClientTableQuery =
-               AddNewClient.make(~userId="1", ~name, ~dataSheet, ());
+               AddNewClient.make(~name, ~dataSheet, ());
              <button
                className="table-submit-btn"
                onClick={
