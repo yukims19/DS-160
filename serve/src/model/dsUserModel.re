@@ -183,7 +183,7 @@ let preparedStatements =
       name: "ds_add_new_client",
       statement:
         Printf.sprintf(
-          "INSERT INTO clients(user_id , name , data_sheet, time_created , time_last_updated) VALUES ($1, $2, $3, $4, $5);",
+          "INSERT INTO clients(id, user_id , name , data_sheet, time_created , time_last_updated) VALUES ($1, $2, $3, $4, $5, $6);",
         ),
     },
   ];
