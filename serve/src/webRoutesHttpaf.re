@@ -75,59 +75,77 @@ let ofHeader = (conn, cookieFieldKey, header: Cohttp.Header.t) => {
   };
 };
 
+let fetchOrCreateSession = (connPool, headers) => {
+  let coHttpHeaders = Utils.coHttpHeadersOfHttpafHeaders(headers);
+  let sessionId = ofHeader(connPool, "ds160_sid", coHttpHeaders);
+  switch (sessionId) {
+  | Some(sessionId) => print_endline("Found Cookies:" ++ sessionId)
+  | None => print_endline("No Cookies Found")
+  };
+
   DsSession.findOrCreateSessionByCookie(connPool, sessionId);
 };
 
 let createGqlCtx = (connPool, headers) =>
   fetchOrCreateSession(connPool, headers)
   >>= (
-    session => {
-      let userId = session.userId;
-      print_endline(
-        "Found or Created sessionId:" ++ Uuidm.to_string(session.id),
-      );
-      switch (userId) {
-      | Some(userId) =>
-        print_endline("Found some userId");
-        DsUserModel.getUserById(connPool, userId)
-        >>= (
-          fetchedUser => {
-            let ctx =
-              DsSchema.{
-                db: connPool,
-                user: fetchedUser,
-                sessionId: session.id,
-              };
-            switch (ctx.user) {
-            | Some(user) =>
-              print_endline("Found a user" ++ Uuidm.to_string(user.id))
-            | None =>
-              print_endline(
-                "No user found with the userId" ++ Uuidm.to_string(userId),
-              )
-            };
-            Deferred.return(ctx);
-          }
-        );
-      | None =>
-        print_endline("No userId in the session table found");
-        let ctx = DsSchema.{db: connPool, user: None, sessionId: session.id};
-        Deferred.return(ctx);
-      };
-    }
+    session =>
+      switch (session) {
+      | Ok(session) =>
+        let userId = session.userId;
+        switch (userId) {
+        | Some(userId) =>
+          print_endline("Found userId in session");
+          DsUserModel.getUserById(connPool, userId)
+          >>= (
+            fetchedUser => {
+              let ctx =
+                DsSchema.{
+                  db: connPool,
+                  user: fetchedUser,
+                  sessionId: session.id,
+                };
+              /*
+               switch (ctx.user) {
+               | Some(user) =>
+                 print_endline("Found a user" ++ Uuidm.to_string(user.id))
+               | None =>
+                 print_endline(
+                   "No user found with the userId" ++ Uuidm.to_string(userId),
+                 )
+               };*/
+              Deferred.return(Ok(ctx));
+            }
+          );
+        | None =>
+          print_endline("No userId in session");
+          let ctx =
+            DsSchema.{db: connPool, user: None, sessionId: session.id};
+          Deferred.return(Ok(ctx));
+        };
+      | Error(message) => Deferred.return(Result.Error(message))
+      }
   );
 
 let executeQuery = (connPool, queryBody, variables, headers: Headers.t) =>
   createGqlCtx(connPool, headers)
   >>= (
-    ctx => {
-      let r = Graphql_parser.parse(queryBody);
-      switch (r) {
-      | Ok(query) =>
-        Graphql_async.Schema.execute(DsSchema.schema, ctx, ~variables, query)
-      | Error(err) => failwith(err)
-      };
-    }
+    ctx =>
+      switch (ctx) {
+      | Ok(ctx) =>
+        let r = Graphql_parser.parse(queryBody);
+        switch (r) {
+        | Ok(query) =>
+          Graphql_async.Schema.execute(
+            DsSchema.schema,
+            ctx,
+            ~variables,
+            query,
+          )
+        | Error(err) => failwith(err)
+        };
+      | Error(message) => failwith(message)
+      }
   );
 
 let requestOrigin = (req: Httpaf.Request.t) =>
@@ -191,25 +209,28 @@ let dynamicQueryHandler = (~readOnly as _, _keys, _rest, request) => {
   let headersCORS = getCORSHeaders(req);
   sessionIo
   >>| (
-    session => {
-      let headersResponse =
-        Headers.add_list(
-          headersCORS,
-          toCookieHeaders(
-            ~path="/",
-            ~domain="localhost",
-            ~secure=false,
-            ~expireDate=
-              Utils.getExn(
-                "Ptime.of_float for expireDate",
-                Ptime.of_float_s(999999999.0),
-              ),
-            "ds160_sid",
-            Uuidm.to_string(session.id),
-          ),
-        );
-      headersResponse;
-    }
+    session =>
+      switch (session) {
+      | Ok(session) =>
+        let headersResponse =
+          Headers.add_list(
+            headersCORS,
+            toCookieHeaders(
+              ~path="/",
+              ~domain="localhost",
+              ~secure=false,
+              ~expireDate=
+                Utils.getExn(
+                  "Ptime.of_float for expireDate",
+                  Ptime.of_float_s(999999999.0),
+                ),
+              "ds160_sid",
+              Uuidm.to_string(session.id),
+            ),
+          );
+        headersResponse;
+      | Error(message) => failwith(message)
+      }
   )
   >>= (
     headersResponse => {
