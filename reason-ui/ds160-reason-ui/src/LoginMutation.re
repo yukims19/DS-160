@@ -11,16 +11,13 @@ module LoginMutation = ReasonApollo.CreateMutation(Login);
 
 let component = ReasonReact.statelessComponent("LoginMutaiton");
 
-let make = _children => {
+let make = (~username, ~password, _children) => {
   ...component,
-  render: _self => {
-    let username = "yuki";
-    let password = "123";
+  render: _self =>
     <LoginMutation>
       ...{
            (mutation, _) => {
-             let loginQuery =
-               Login.make(~username="yuki", ~password="123", ());
+             let loginQuery = Login.make(~username, ~password, ());
              <button
                className="btn btn-primary"
                onClick={
@@ -37,6 +34,5 @@ let make = _children => {
              </button>;
            }
          }
-    </LoginMutation>;
-  },
+    </LoginMutation>,
 };
