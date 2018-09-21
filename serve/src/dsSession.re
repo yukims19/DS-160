@@ -24,15 +24,20 @@ let ofDbResult = tuple =>
         )
       | Some(uuid) => uuid
       };
+
     let userId =
-      switch (Uuidm.of_string(userId)) {
-      | None =>
-        failPublic(
-          ~internal="Invalid uuid from db in oneUser (id): " ++ userId,
-          ~public="We hit an internal error",
-          (),
-        )
-      | Some(uuid) => Some(uuid)
+      if (String.length(userId) > 0) {
+        switch (Uuidm.of_string(userId)) {
+        | None =>
+          failPublic(
+            ~internal="Invalid uuid from db in dsUser (id): " ++ userId,
+            ~public="We hit an internal error",
+            (),
+          )
+        | Some(uuid) => Some(uuid)
+        };
+      } else {
+        None;
       };
     let expireAt = Some(OP.ptimeOfDbTs(expireAt));
     let createdAt = Some(OP.ptimeOfDbTs(createdAt));
