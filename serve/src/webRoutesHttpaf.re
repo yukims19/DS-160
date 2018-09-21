@@ -58,7 +58,28 @@ let fetchOrCreateSession = (connPool, headers) => {
   print_endline(
     "Headers:::::::~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     ++ Headers.to_string(headers),
+let coHttpHeadersOfHttpafHeaders = httpAfHeaders => {
+  let headers = ref([]);
+  Httpaf.Headers.iter(
+    ~f=(name, value) => headers := List.append(headers^, [(name, value)]),
+    httpAfHeaders,
   );
+  Cohttp.Header.of_list(headers^);
+};
+
+let ofHeader = (conn, cookieFieldKey, header: Cohttp.Header.t) => {
+  let cookieValues = Cohttp.Cookie.Cookie_hdr.extract(header);
+  try (
+    {
+      let sessionKey = List.assoc(cookieFieldKey, cookieValues);
+      Some(sessionKey);
+      /* Look up session with sessionKey here */
+    }
+  ) {
+  | Not_found => None
+  };
+};
+
   DsSession.findOrCreateSessionByCookie(connPool, sessionId);
   /*
    (
