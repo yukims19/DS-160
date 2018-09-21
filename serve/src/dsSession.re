@@ -80,11 +80,12 @@ let setUserIdBySessionId =
     }
   );
 };
+
 let generateNewSession = () => {
   let time = Unix.gettimeofday();
   let newTimeNow = Ptime.of_float_s(time);
   let newSession = {
-    id: Uuidm.ns_X500,
+    id: Utils.genUuid(),
     userId: None,
     expireAt: Some(Ptime.max),
     createdAt: newTimeNow,
