@@ -16,6 +16,8 @@ open Graphql_async;
    5. Add a "top story on hacker news" io field (do this last)
  */
 
+type gqlContext = {db: OneDb.connPool};
+
 let baseHnUri = "https://hacker-news.firebaseio.com";
 
 let get = (~path: string) => {
@@ -199,14 +201,15 @@ let story =
   Schema.(
     obj("Story", ~fields=_storyType =>
       [
-        field("id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=((), p) =>
+        field("id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=(_ctx, p) =>
           p.id
         ),
         field(
-          "title", ~args=Arg.([]), ~typ=non_null(string), ~resolve=((), p) =>
+          "title", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, p) =>
           p.title
         ),
-        field("url", ~args=Arg.([]), ~typ=non_null(string), ~resolve=((), p) =>
+        field(
+          "url", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, p) =>
           p.url
         ),
       ]
@@ -221,7 +224,7 @@ let hackernews =
           "topStory",
           ~args=Arg.([]),
           ~typ=non_null(list(non_null(story))),
-          ~resolve=((), ()) => {
+          ~resolve=(_ctx, ()) => {
             /*Call when only filed is required*/
             let ioListStory = getTopStoryList();
             ioListStory >>= (stories => Deferred.return(Ok(stories)));
@@ -238,35 +241,38 @@ let rec user =
       obj("User", ~fields=userGqlType =>
         [
           field(
-            "id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=((), p: user) =>
+            "id",
+            ~args=Arg.([]),
+            ~typ=non_null(int),
+            ~resolve=(_ctx, p: user) =>
             p.id
           ),
           field(
             "name",
             ~args=Arg.([]),
             ~typ=non_null(string),
-            ~resolve=((), p: user) =>
+            ~resolve=(_ctx, p: user) =>
             p.name
           ),
           field(
             "role",
             ~args=Arg.([]),
             ~typ=non_null(role),
-            ~resolve=((), p: user) =>
+            ~resolve=(_ctx, p: user) =>
             p.role
           ),
           field(
             "friends",
             ~args=Arg.([]),
             ~typ=list(non_null(userGqlType)),
-            ~resolve=((), p) =>
+            ~resolve=(_ctx, p) =>
             Some(p.friends)
           ),
           field(
             "pets",
             ~args=Arg.([]),
             ~typ=list(non_null(Lazy.(force(pet)))),
-            ~resolve=((), p: user) =>
+            ~resolve=(_ctx, p: user) =>
             Some(p.pets)
           ),
         ]
@@ -278,25 +284,28 @@ and pet =
       obj("pet", ~fields=_pet =>
         [
           field(
-            "id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=((), p: pet) =>
+            "id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=(_ctx, p: pet) =>
             p.id
           ),
           field(
             "name",
             ~args=Arg.([]),
             ~typ=non_null(string),
-            ~resolve=((), p: pet) =>
+            ~resolve=(_ctx, p: pet) =>
             p.name
           ),
           field(
-            "color", ~args=Arg.([]), ~typ=non_null(string), ~resolve=((), p) =>
+            "color",
+            ~args=Arg.([]),
+            ~typ=non_null(string),
+            ~resolve=(_ctx, p) =>
             p.color
           ),
           field(
             "species",
             ~args=Arg.([]),
             ~typ=non_null(species),
-            ~resolve=((), p) =>
+            ~resolve=(_ctx, p) =>
             p.species
           ),
           field(
@@ -304,7 +313,7 @@ and pet =
             "owner",
             ~args=Arg.([]),
             ~typ=Lazy.(force(user)),
-            ~resolve=((), p: pet) =>
+            ~resolve=(_ctx, p: pet) =>
             p.owner
           ),
         ]
@@ -318,21 +327,21 @@ let schema =
         "users",
         ~args=Arg.([]),
         ~typ=non_null(list(non_null(Lazy.(force(user))))),
-        ~resolve=((), ()) =>
+        ~resolve=(_ctx, ()) =>
         Deferred.return(Ok(users))
       ),
       field(
         "pets",
         ~args=Arg.([]),
         ~typ=non_null(list(non_null(Lazy.(force(pet))))),
-        ~resolve=((), ()) =>
+        ~resolve=(_ctx, ()) =>
         pets
       ),
       field(
         "hackerNews",
         ~args=Arg.([]),
         ~typ=non_null(hackernews),
-        ~resolve=((), ()) =>
+        ~resolve=(_ctx, ()) =>
         ()
       ),
       field(
@@ -355,7 +364,7 @@ let schema =
                 ),
             ),
           ],
-        ~resolve=((), (), (greeting, name)) =>
+        ~resolve=(_ctx, (), (greeting, name)) =>
         Some(Format.sprintf("%s, %s", greeting, name))
       ),
       field(
@@ -366,8 +375,33 @@ let schema =
             arg("name", ~typ=non_null(string)),
             arg("id", ~typ=non_null(string)),
           ],
-        ~resolve=((), (), name, id) =>
+        ~resolve=(_ctx, (), name, id) =>
         Some(name ++ id)
+      ),
+      io_field(
+        "dbTestUsers",
+        ~args=
+          Arg.[
+            arg("username", ~typ=non_null(string)),
+            arg("password", ~typ=non_null(string)),
+          ],
+        ~typ=bool,
+        ~resolve=(ctx, (), username, password) => {
+          let userDBResults =
+            DsUserModel.byUsernameAndPassword(ctx.db, username, password);
+
+          let returnResults =
+            userDBResults
+            >>= (
+              result =>
+                switch (result) {
+                | Some(_result) => Deferred.return(Ok(Some(true)))
+                | None => Deferred.return(Ok(Some(false)))
+                }
+            );
+
+          returnResults;
+        },
       ),
     ])
   );

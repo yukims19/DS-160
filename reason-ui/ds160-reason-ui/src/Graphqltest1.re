@@ -1,21 +1,13 @@
 [@bs.module] external gql: ReasonApolloTypes.gql = "graphql-tag";
-module GetTopStories = [%graphql
-  {|
+module GetTopStories = [%graphql {|
      query{
-     hackerNews {
-     topStory {
-     id
-     title
-     url
+     greeter
      }
-     }
-     }
-|}
-];
+|}];
 
 module GetTopStroriesQuery = ReasonApollo.CreateQuery(GetTopStories);
 
-let component = ReasonReact.statelessComponent("HackerNewsTopStory");
+let component = ReasonReact.statelessComponent("Graphqltest1");
 
 let make = _children => {
   ...component,
@@ -28,18 +20,7 @@ let make = _children => {
                | Loading => <div> {"Loading" |> ReasonReact.string} </div>
                | Error(e) => <div> {ReasonReact.string(e##message)} </div>
                | Data(response) =>
-                 <table>
-                   <tbody>
-                     {
-                       Js.Array.map(
-                         story =>
-                           <tr> {story##title |> ReasonReact.string} </tr>,
-                         response##hackerNews##topStory,
-                       )
-                       |> ReasonReact.array
-                     }
-                   </tbody>
-                 </table>
+                 <h1> {ReasonReact.string(response##greeter)} </h1>
                }
            }
       </GetTopStroriesQuery>
