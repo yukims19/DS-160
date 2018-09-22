@@ -1,6 +1,6 @@
 type client = {
   .
-  "id": int,
+  "id": string,
   "name": string,
   "dataSheet": string,
   "applicationId": string,

@@ -15,7 +15,7 @@ let component = ReasonReact.statelessComponent("FindMe");
 
 open ReasonReact;
 
-let make = (~ifNotLoggedIn, children) => {
+let make = children => {
   ...component,
   render: _self =>
     <div>
@@ -28,7 +28,7 @@ let make = (~ifNotLoggedIn, children) => {
                | Data(response) =>
                  switch (response##me) {
                  | Some(_user) => array(children)
-                 | None => ifNotLoggedIn
+                 | None => <LoginForm />
                  }
                }
            }

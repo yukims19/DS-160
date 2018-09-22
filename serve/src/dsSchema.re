@@ -2,7 +2,7 @@ open Async;
 open Graphql_async;
 
 type client = {
-  id: int,
+  id: Uuidm.t,
   name: string,
   dataSheet: string,
   applicationId: string,
@@ -13,6 +13,7 @@ type client = {
 type gqlContext = {
   db: OneDb.connPool,
   user: option(DsUserModel.user),
+  sessionId: Uuidm.t,
 };
 
 let user =
@@ -22,9 +23,9 @@ let user =
         field(
           "id",
           ~args=Arg.([]),
-          ~typ=non_null(int),
+          ~typ=non_null(string),
           ~resolve=(_ctx, u: DsUserModel.user) =>
-          u.id
+          Uuidm.to_string(u.id)
         ),
         field(
           "username",
@@ -41,8 +42,8 @@ let client =
   Schema.(
     obj("Client", ~fields=_storyType =>
       [
-        field("id", ~args=Arg.([]), ~typ=non_null(int), ~resolve=(_ctx, c) =>
-          c.id
+        field("id", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
+          Uuidm.to_string(c.id)
         ),
         field(
           "name", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
@@ -96,12 +97,18 @@ let schema =
           ~args=
             Arg.[
               arg("name", ~typ=non_null(string)),
-              arg("userId", ~typ=non_null(string)),
               arg("dataSheet", ~typ=non_null(string)),
             ],
-          ~resolve=(ctx, (), name, userId, dataSheet) => {
+          ~resolve=(ctx, (), name, dataSheet) =>
+          switch (ctx.user) {
+          | Some(user) =>
             let addClientResults =
-              DsUserModel.addNewClient(ctx.db, userId, name, dataSheet);
+              DsUserModel.addNewClient(
+                ctx.db,
+                Uuidm.to_string(user.id),
+                name,
+                dataSheet,
+              );
 
             let returnResults =
               addClientResults
@@ -109,11 +116,52 @@ let schema =
                 result =>
                   Deferred.return(result)
                   /*
-                    switch (result) {
-                   | Ok(value) => Deferred.return(value)
-                    | Error(value) => Deferred.return(value)
-                    }
+                     switch (result) {
+                     | Ok(value) => Deferred.return(value)
+                     | Error(value) => Deferred.return(value)
+                     }
                    */
+              );
+            returnResults;
+
+          | None => Deferred.return(Error("Please login in"))
+          }
+        ),
+        io_field(
+          "login",
+          ~typ=non_null(string),
+          ~args=
+            Arg.[
+              arg("username", ~typ=non_null(string)),
+              arg("password", ~typ=non_null(string)),
+            ],
+          ~resolve=(ctx, (), username, password) => {
+            let user =
+              DsUserModel.byUsernameAndPassword(ctx.db, username, password);
+            let returnResults =
+              user
+              >>= (
+                result =>
+                  switch (result) {
+                  | Some(user) =>
+                    DsSession.setUserIdBySessionId(
+                      ctx.db,
+                      ctx.sessionId,
+                      user.id,
+                    )
+                    >>= (
+                      result =>
+                        switch (result) {
+                        | Ok(message) => Deferred.return(Ok(message))
+                        | Error(message) => Deferred.return(Error(message))
+                        }
+                    )
+
+                  /*                    Deferred.return(
+                                          Ok("Successfully logged in as " ++ user.username),
+                                        );*/
+                  | None => Deferred.return(Error("No User Found"))
+                  }
               );
             returnResults;
           },
@@ -124,10 +172,10 @@ let schema =
         io_field(
           "clients",
           ~typ=list(non_null(client)),
-          ~args=Arg.[arg("userId", ~typ=non_null(string))],
-          ~resolve=(ctx, (), userId) => {
+          ~args=Arg.([]),
+          ~resolve=(ctx: gqlContext, ()) => {
             let clientDBResults =
-              DsUserModel.allClientsByUserId(ctx.db, userId);
+              DsUserModel.allClientsByUserId(ctx.db, ctx.user);
             let time = Unix.gettimeofday();
 
             let returnResults =

@@ -4,13 +4,15 @@ open Common;
 let defer = Deferred.return;
 
 type user = {
-  id: int,
+  id: Uuidm.t,
   username: string,
   password: string,
+  createdAt: option(Ptime.t),
+  lastLoggedIn: option(Ptime.t),
 };
 type client = {
-  id: int,
-  userId: int,
+  id: Uuidm.t,
+  userId: Uuidm.t,
   name: string,
   dataSheet: string,
   applicationId: string,
@@ -21,14 +23,61 @@ type client = {
 let ofDbResult = tuple =>
   switch (tuple) {
   | [|id, userId, name, dataSheet, applicationId, createdAt, updatedAt|] =>
-    let id = int_of_string(id);
-    let userId = int_of_string(userId);
+    let id =
+      switch (Uuidm.of_string(id)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in oneUser (id): " ++ id,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
+
+    let userId =
+      switch (Uuidm.of_string(userId)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in oneUser (id): " ++ userId,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
     {id, userId, name, dataSheet, applicationId, createdAt, updatedAt};
   | resFields =>
     failPublic(
       ~internal=
         Printf.sprintf(
           "Invalid DB tuple shape for oneUser: fields=%s",
+          String.concat(", ", Array.to_list(resFields)),
+        ),
+      ~public="We hit an internal error",
+      (),
+    )
+  };
+
+let ofDbResultUser = tuple =>
+  switch (tuple) {
+  | [|id, username, password, createdAt, lastLoggedIn|] =>
+    let id =
+      switch (Uuidm.of_string(id)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in oneUser (id): " ++ id,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
+    let createdAt = Some(OP.ptimeOfDbTs(createdAt));
+    let lastLoggedIn = Some(OP.ptimeOfDbTs(lastLoggedIn));
+    {id, username, password, createdAt, lastLoggedIn};
+  | resFields =>
+    failPublic(
+      ~internal=
+        Printf.sprintf(
+          "Invalid DB tuple shape for dsUser: fields=%s",
           String.concat(", ", Array.to_list(resFields)),
         ),
       ~public="We hit an internal error",
@@ -49,20 +98,34 @@ let byUsernameAndPassword =
     )
     >>| (
       res =>
-        if (Array.length(res#get_all) >= 1) {
-          Some({
-            id: int_of_string(res#get_all[0][0]),
-            username: res#get_all[0][1],
-            password: res#get_all[0][2],
-          });
-        } else {
-          None;
+        try (Some(ofDbResultUser(res#get_all[0]))) {
+        | _ => None
         }
     )
   );
 };
 
-let allClientsByUserId = (conn: OneDb.connPool, userId) => {
+let getUserById =
+    (conn: OneDb.connPool, userId: Uuidm.t)
+    : Deferred.t(option(user)) => {
+  let params = [|Uuidm.to_string(userId)|];
+  Async.(
+    OP.sendPrepared(conn, ~params, ~name="ds_user_by_id", ())
+    >>| (
+      res =>
+        try (Some(ofDbResultUser(res#get_all[0]))) {
+        | _ => None
+        }
+    )
+  );
+};
+
+let allClientsByUserId = (conn: OneDb.connPool, user: option(user)) => {
+  let userId =
+    switch (user) {
+    | Some(user) => Uuidm.to_string(user.id)
+    | None => ""
+    };
   let params = [|userId|];
   OP.sendPrepared(conn, ~params, ~name="ds_all_clients_by_userid", ())
   >>| (res => Array.map(record => ofDbResult(record), res#get_all));
@@ -76,7 +139,15 @@ let addNewClient = (conn: OneDb.connPool, userId, name, datasheet) => {
     | Some(time) => Ptime.to_rfc3339(time)
     | None => ""
     };
-  let params = [|userId, name, datasheet, insertingTime, insertingTime|];
+  let newId = Uuidm.to_string(Utils.genUuid());
+  let params = [|
+    newId,
+    userId,
+    name,
+    datasheet,
+    insertingTime,
+    insertingTime,
+  |];
   OP.sendPrepared(conn, ~params, ~name="ds_add_new_client", ())
   >>| (
     res => {
@@ -101,6 +172,10 @@ let preparedStatements =
         ),
     },
     {
+      name: "ds_user_by_id",
+      statement: Printf.sprintf("SELECT * FROM users WHERE id = $1;"),
+    },
+    {
       name: "ds_all_clients_by_userid",
       statement: Printf.sprintf("SELECT * FROM clients WHERE user_id = $1"),
     },
@@ -108,7 +183,7 @@ let preparedStatements =
       name: "ds_add_new_client",
       statement:
         Printf.sprintf(
-          "INSERT INTO clients(user_id , name , data_sheet, time_created , time_last_updated) VALUES ($1, $2, $3, $4, $5);",
+          "INSERT INTO clients(id, user_id , name , data_sheet, time_created , time_last_updated) VALUES ($1, $2, $3, $4, $5, $6);",
         ),
     },
   ];

@@ -1,8 +1,8 @@
 [@bs.module] external gql: ReasonApolloTypes.gql = "graphql-tag";
 module GetClientTable = [%graphql
   {|
-     query($userId: String!){
-     clients(userId: $userId){
+     query findClients{
+     clients{
      id
      name
      dataSheet
@@ -19,9 +19,8 @@ let component = ReasonReact.statelessComponent("ClientTableQuery");
 
 let make = (~updateClientRows, _children) => {
   ...component,
-  render: _self => {
-    let getClientTableQuery = GetClientTable.make(~userId="1", ());
-    <GetClientTableQuery variables=getClientTableQuery##variables>
+  render: _self =>
+    <GetClientTableQuery>
       ...{
            ({result}) =>
              switch (result) {
@@ -33,10 +32,7 @@ let make = (~updateClientRows, _children) => {
                  /*                 updateClientRows(clients);*/
                  clients
                  |> Array.map(clientInfo =>
-                      <Client
-                        key={string_of_int(clientInfo##id)}
-                        clientInfo
-                      />
+                      <Client clientInfo key=clientInfo##id />
                     )
                  |> ReasonReact.array
 
@@ -44,8 +40,7 @@ let make = (~updateClientRows, _children) => {
                }
              }
          }
-    </GetClientTableQuery>;
-  },
+    </GetClientTableQuery>,
 };
 
 /*

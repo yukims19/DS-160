@@ -1,6 +1,6 @@
 let component = ReasonReact.statelessComponent("LegalClient");
 
-let make = (~clientInfo: ClientData.client, _children) => {
+let make = (~clientInfo, _children) => {
   ...component,
   render: _self =>
     ReasonReact.(

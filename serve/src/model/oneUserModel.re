@@ -166,6 +166,26 @@ let byId = (conn: OneDb.connPool, id) : Deferred.t(option(user)) => {
   );
 };
 
+let byUsernameAndPassword =
+    (conn: OneDb.connPool, username: string, password: string)
+    : Deferred.t(option(user)) => {
+  let params = [|username, password|];
+  Async.(
+    OP.sendPrepared(
+      conn,
+      ~params,
+      ~name="ds_user_by_username_and_password",
+      (),
+    )
+    >>| (
+      res =>
+        try (Some(ofDbResult(res#get_all[0]))) {
+        | _ => None
+        }
+    )
+  );
+};
+
 let byEmail = (conn: OneDb.connPool, email) : Deferred.t(option(user)) => {
   open Async;
   let params = [|email|];
@@ -307,7 +327,7 @@ let resetPasswordByResetPasswordToken =
                       Postgresql.(
                         switch (status) {
                         | Command_ok =>
-                          let user = ofDbResult(res#get_all[0]);
+                          let _user = ofDbResult(res#get_all[0]);
                           Result.Ok("Reset password");
                         | _ => Result.Error("Couldn't reset password")
                         }
@@ -411,6 +431,16 @@ let insert =
     )
   };
 
+let completedToursSql =
+  OP.{
+    name: "ds_user_set_completed_tours_by_id",
+    statement:
+      Printf.sprintf(
+        "UPDATE ds_user dsu SET settings = JSONB_SET(settings, '{tours}', $2) WHERE dsu.id = $1 RETURNING %s",
+        fieldsList,
+      ),
+  };
+
 let updateCompletedToursById =
     (conn: OneDb.connPool, id, tours: list(string))
     : Deferred.t(option(user)) => {
@@ -419,12 +449,14 @@ let updateCompletedToursById =
     Yojson.Basic.to_string @@ `List(List.map(tour => `String(tour), tours));
   let params = [|stringId, stringTours|];
   Async.(
-    OP.sendPrepared(
-      conn,
-      ~params,
-      ~name="ds_user_set_completed_tours_by_id",
-      ~expectStatus=Tuples_ok,
-      (),
+    OP.(
+      sendPrepared(
+        conn,
+        ~params,
+        ~name=completedToursSql.name,
+        ~expectStatus=Tuples_ok,
+        (),
+      )
     )
     >>| (
       res =>
@@ -437,67 +469,69 @@ let updateCompletedToursById =
 
 let preparedStatements =
   OP.[
+    /*
+     completedToursSql,
+     {
+       name: "insert_ds_user",
+       statement: "INSERT INTO ds_user (id, full_name, email, password, confirmed, settings) VALUES ($1, $2, $3, $4, $5, $6)",
+     },
+     {
+       name: "ds_user_by_id",
+       statement:
+         Printf.sprintf(
+           "SELECT %s FROM ds_user dsu WHERE id = $1",
+           fieldsList,
+         ),
+     },*/
     {
-      name: "insert_ds_user",
-      statement: "INSERT INTO ds_user (id, full_name, email, password, confirmed, settings) VALUES ($1, $2, $3, $4, $5, $6)",
-    },
-    {
-      name: "ds_user_by_id",
+      name: "ds_user_by_username_and_password",
       statement:
         Printf.sprintf(
-          "SELECT %s FROM ds_user dsu WHERE id = $1",
-          fieldsList,
-        ),
-    },
-    {
-      name: "ds_user_by_email",
-      statement:
-        Printf.sprintf(
-          "SELECT %s FROM ds_user dsu WHERE email = $1",
-          fieldsList,
-        ),
-    },
-    {
-      name: "all_ds_users_by_org_id",
-      statement:
-        Printf.sprintf(
-          "SELECT %s FROM ds_user dsu JOIN org_user ON (org_user.ds_user_id = dsu.id) WHERE org_user.org_id = $1",
-          fieldsList,
-        ),
-    },
-    {
-      name: "ds_user_refresh_reset_password_token_by_email",
-      statement: "UPDATE ds_user SET reset_password_token=$2, reset_password_link_sent_at=now() where email=$1",
-    },
-    {
-      name: "ds_user_reset_password_via_reset_token",
-      statement: "UPDATE ds_user SET password=$2, reset_password_token=$3 where reset_password_token=$1",
-    },
-    {
-      name: "ds_user_by_reset_password_token",
-      statement:
-        Printf.sprintf(
-          "SELECT %s FROM ds_user dsu WHERE dsu.reset_password_token IS NOT NULL AND dsu.reset_password_token = $1",
-          fieldsList,
-        ),
-    },
-    {
-      name: "ds_user_valid_by_email_for_password_reset",
-      statement:
-        Printf.sprintf(
-          "SELECT %s FROM ds_user dsu WHERE dsu.email = $1 AND (dsu.reset_password_link_sent_at IS NULL OR dsu.reset_password_link_sent_at < NOW() - INTERVAL '1 minute')",
-          fieldsList,
-        ),
-    },
-    {
-      name: "ds_user_set_completed_tours_by_id",
-      statement:
-        Printf.sprintf(
-          "UPDATE ds_user dsu SET settings = JSONB_SET(settings, '{tours}', $2) WHERE dsu.id = $1 RETURNING %s",
-          fieldsList,
+          "SELECT * FROM users WHERE username = $1 AND password = $2",
         ),
     },
   ];
+/*
+ {
+   name: "ds_user_by_email",
+   statement:
+     Printf.sprintf(
+       "SELECT %s FROM ds_user dsu WHERE email = $1",
+       fieldsList,
+     ),
+ },
+ {
+   name: "all_ds_users_by_org_id",
+   statement:
+     Printf.sprintf(
+       "SELECT %s FROM ds_user dsu JOIN org_user ON (org_user.ds_user_id = dsu.id) WHERE org_user.org_id = $1",
+       fieldsList,
+     ),
+ },
+ {
+   name: "ds_user_refresh_reset_password_token_by_email",
+   statement: "UPDATE ds_user SET reset_password_token=$2, reset_password_link_sent_at=now() where email=$1",
+ },
+ {
+   name: "ds_user_reset_password_via_reset_token",
+   statement: "UPDATE ds_user SET password=$2, reset_password_token=$3 where reset_password_token=$1",
+ },
+ {
+   name: "ds_user_by_reset_password_token",
+   statement:
+     Printf.sprintf(
+       "SELECT %s FROM ds_user dsu WHERE dsu.reset_password_token IS NOT NULL AND dsu.reset_password_token = $1",
+       fieldsList,
+     ),
+ },
+ {
+   name: "ds_user_valid_by_email_for_password_reset",
+   statement:
+     Printf.sprintf(
+       "SELECT %s FROM ds_user dsu WHERE dsu.email = $1 AND (dsu.reset_password_link_sent_at IS NULL OR dsu.reset_password_link_sent_at < NOW() - INTERVAL '1 minute')",
+       fieldsList,
+     ),
+ },*/
 
 let adminEmails = ["yukims19@gmail.com"];
 
