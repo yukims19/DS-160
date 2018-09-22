@@ -65,7 +65,7 @@ let setUserIdBySessionId =
       let status = res#status;
       Postgresql.(
         switch (status) {
-        | Tuples_ok =>
+        | Command_ok =>
           Deferred.return(
             Result.Ok("Successfully updated userId in session"),
           )
@@ -118,14 +118,13 @@ let storeAndReturnGenerateNewSession = conn => {
 
       Postgresql.(
         switch (status) {
-        | Tuples_ok => Deferred.return(newSession)
-        /*
-           Deferred.return(
-         Result.Ok("Successfully updated userId in session"),
-         )*/
-        | _ => Deferred.return(newSession)
-        /* TODO: Need to deal with error cases here!!!         raise(Not_found)*/
-        /*Deferred.return(Result.Error("Some kind of error I guess..."))*/
+        | Command_ok => Deferred.return(Result.Ok(newSession))
+        | _ =>
+          Deferred.return(
+            Result.Error(
+              "Failed to add new session...Trace back to DsSession",
+            ),
+          )
         }
       );
     }
@@ -134,18 +133,20 @@ let storeAndReturnGenerateNewSession = conn => {
 
 let findOrCreateSessionByCookie =
     (conn: OneDb.connPool, sessionId: option(string))
-    : Deferred.t(session) =>
+    : Deferred.t(result(session, string)) =>
   switch (sessionId) {
-  | Some(id) =>
-    let params = [|id|];
+  | Some(sessionId) =>
+    let params = [|sessionId|];
     Async.(
       OP.sendPrepared(conn, ~params, ~name="ds_find_session_by_id", ())
       >>= (
         res =>
           if (Array.length(res#get_all) > 0) {
+            print_endline("Found sessionId in database");
             let session = ofDbResult(res#get_all[0]);
-            Deferred.return(session);
+            Deferred.return(Result.Ok(session));
           } else {
+            print_endline("No session Found... Generating a new session");
             storeAndReturnGenerateNewSession(conn);
           }
       )
@@ -162,8 +163,10 @@ let preparedStatements =
     },
     {
       name: "ds_find_session_by_id",
-      statement: Printf.sprintf("SELECT * FROM sessions WHERE id = $1;"),
-      /*TODO: and expire_at >now()*/
+      statement:
+        Printf.sprintf(
+          "SELECT * FROM sessions WHERE id = $1 AND now() < expire_at;",
+        ),
     },
     {
       name: "ds_add_new_session",
