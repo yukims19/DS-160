@@ -37,7 +37,7 @@ let make = (~clientName, ~summarySheet, ~updateClientRows, _children) => {
                        && String.length(dataSheet) > 0) {
                      mutation(
                        ~variables=getClientTableQuery##variables,
-                       ~refetchQueries=[|"clients"|],
+                       ~refetchQueries=[|"findClients"|],
                        (),
                      )
                      |> ignore;

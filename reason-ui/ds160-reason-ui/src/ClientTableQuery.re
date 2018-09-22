@@ -1,7 +1,7 @@
 [@bs.module] external gql: ReasonApolloTypes.gql = "graphql-tag";
 module GetClientTable = [%graphql
   {|
-     query{
+     query findClients{
      clients{
      id
      name
