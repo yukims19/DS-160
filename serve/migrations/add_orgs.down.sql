@@ -1,0 +1,2 @@
+DROP TABLE orgs;
+ALTER TABLE users DROP COLUMN org_id;

@@ -9,6 +9,7 @@ type user = {
   password: string,
   createdAt: option(Ptime.t),
   lastLoggedIn: option(Ptime.t),
+  orgId: Uuidm.t,
 };
 type client = {
   id: Uuidm.t,
@@ -59,12 +60,22 @@ let ofDbResult = tuple =>
 
 let ofDbResultUser = tuple =>
   switch (tuple) {
-  | [|id, username, password, createdAt, lastLoggedIn|] =>
+  | [|id, username, password, createdAt, lastLoggedIn, orgId|] =>
     let id =
       switch (Uuidm.of_string(id)) {
       | None =>
         failPublic(
-          ~internal="Invalid uuid from db in oneUser (id): " ++ id,
+          ~internal="Invalid uuid from db in dsUser (id): " ++ id,
+          ~public="We hit an internal error",
+          (),
+        )
+      | Some(uuid) => uuid
+      };
+    let orgId =
+      switch (Uuidm.of_string(orgId)) {
+      | None =>
+        failPublic(
+          ~internal="Invalid uuid from db in dsUser (id): " ++ orgId,
           ~public="We hit an internal error",
           (),
         )
@@ -72,7 +83,7 @@ let ofDbResultUser = tuple =>
       };
     let createdAt = Some(OP.ptimeOfDbTs(createdAt));
     let lastLoggedIn = Some(OP.ptimeOfDbTs(lastLoggedIn));
-    {id, username, password, createdAt, lastLoggedIn};
+    {id, username, password, createdAt, lastLoggedIn, orgId};
   | resFields =>
     failPublic(
       ~internal=
@@ -97,10 +108,12 @@ let byUsernameAndPassword =
       (),
     )
     >>| (
-      res =>
+      res => {
+        print_endline("================here");
         try (Some(ofDbResultUser(res#get_all[0]))) {
         | _ => None
-        }
+        };
+      }
     )
   );
 };
@@ -177,7 +190,10 @@ let preparedStatements =
     },
     {
       name: "ds_all_clients_by_userid",
-      statement: Printf.sprintf("SELECT * FROM clients WHERE user_id = $1"),
+      statement:
+        Printf.sprintf(
+          "SELECT * FROM clients WHERE user_id = $1 ORDER BY time_last_updated DESC",
+        ),
     },
     {
       name: "ds_add_new_client",
