@@ -12,7 +12,6 @@ type action =
   | UpdateClients(array(ClientData.client))
   | InputNameChange(string)
   | InputSheetChange(string)
-  /*  | CheckLogin(bool)*/
   | ClickAnimation;
 
 let component = ReasonReact.reducerComponent("App");
@@ -33,13 +32,9 @@ let make = _children => {
       ReasonReact.Update({...state, inputName: Some(newName)})
     | InputSheetChange(newSheet) =>
       ReasonReact.Update({...state, inputSheet: Some(newSheet)})
-    /*    | CheckLogin(status) =>
-          Js.log("reached checkLogin:" ++ string_of_bool(status));
-          ReasonReact.Update({...state, isLoggedin: true});*/
     | ClickAnimation =>
       ReasonReact.SideEffects((_self => Js.log("animation")))
     },
-  /*  didMount: self => self.send(CheckLogin(true)),*/
   render: self =>
     <div className="App">
       <LoginGuard>
