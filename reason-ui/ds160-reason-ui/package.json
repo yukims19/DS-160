@@ -12,6 +12,8 @@
     "apollo-link-http": "^1.5.4",
     "apollo-link-ws": "^1.0.8",
     "apollo-utilities": "^1.0.16",
+    "bs-ant-design": "^2.0.0",
+    "bs-fetch": "^0.3.0",
     "graphql": "^0.12.3",
     "graphql-tag": "^2.9.2",
     "react": "^16.5.0",
@@ -19,8 +21,7 @@
     "react-dom": "^16.5.0",
     "reason-apollo": "^0.13.0",
     "reason-scripts": "0.9.0",
-    "subscriptions-transport-ws": "^0.9.14",
-    "bs-fetch": "^0.3.0"
+    "subscriptions-transport-ws": "^0.9.14"
   },
   "scripts": {
     "start": "react-scripts start",
