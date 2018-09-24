@@ -1,14 +1,15 @@
 open Async;
 open Graphql_async;
 
-type client = {
-  id: Uuidm.t,
-  name: string,
-  dataSheet: string,
-  applicationId: string,
-  createdAt: option(Ptime.t),
-  updatedAt: option(Ptime.t),
-};
+/*
+ type client = {
+   id: Uuidm.t,
+   name: string,
+   dataSheet: string,
+   applicationId: string,
+   createdAt: option(Ptime.t),
+   updatedAt: option(Ptime.t),
+ };*/
 
 type gqlContext = {
   db: OneDb.connPool,
@@ -40,48 +41,49 @@ let user =
 
 let client =
   Schema.(
-    obj("Client", ~fields=_storyType =>
+    obj("Client", ~fields=_client =>
       [
-        field("id", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
+        field(
+          "id",
+          ~args=Arg.([]),
+          ~typ=non_null(string),
+          ~resolve=(_ctx, c: DsUserModel.client) =>
           Uuidm.to_string(c.id)
         ),
         field(
-          "name", ~args=Arg.([]), ~typ=non_null(string), ~resolve=(_ctx, c) =>
+          "name",
+          ~args=Arg.([]),
+          ~typ=non_null(string),
+          ~resolve=(_ctx, c: DsUserModel.client) =>
           c.name
         ),
         field(
           "dataSheet",
           ~args=Arg.([]),
           ~typ=non_null(string),
-          ~resolve=(_ctx, c) =>
+          ~resolve=(_ctx, c: DsUserModel.client) =>
           c.dataSheet
         ),
         field(
           "applicationId",
           ~args=Arg.([]),
           ~typ=non_null(string),
-          ~resolve=(_ctx, c) =>
+          ~resolve=(_ctx, c: DsUserModel.client) =>
           c.applicationId
         ),
         field(
           "createdAt",
           ~args=Arg.([]),
           ~typ=non_null(string),
-          ~resolve=(_ctx, c) =>
-          switch (c.createdAt) {
-          | Some(time) => Ptime.to_rfc3339(time)
-          | None => ""
-          }
+          ~resolve=(_ctx, c: DsUserModel.client) =>
+          c.createdAt
         ),
         field(
           "updatedAt",
           ~args=Arg.([]),
           ~typ=non_null(string),
-          ~resolve=(_ctx, c) =>
-          switch (c.updatedAt) {
-          | Some(time) => Ptime.to_rfc3339(time)
-          | None => ""
-          }
+          ~resolve=(_ctx, c: DsUserModel.client) =>
+          c.updatedAt
         ),
       ]
     )
@@ -160,7 +162,7 @@ let schema =
                   /*                    Deferred.return(
                                           Ok("Successfully logged in as " ++ user.username),
                                         );*/
-                  | None => Deferred.return(Error("No User Found"))
+                  | None => Deferred.return(Error("No User Found!!!"))
                   }
               );
             returnResults;
@@ -176,29 +178,27 @@ let schema =
           ~resolve=(ctx: gqlContext, ()) => {
             let clientDBResults =
               DsUserModel.allClientsByUserId(ctx.db, ctx.user);
-            let time = Unix.gettimeofday();
-
             let returnResults =
               clientDBResults
               >>= (
                 result => {
-                  let clientList =
-                    Array.map(
-                      (res: DsUserModel.client) => {
-                        let returnClient = {
-                          id: res.id,
-                          name: res.name,
-                          dataSheet: res.dataSheet,
-                          applicationId: res.applicationId,
-                          createdAt: Ptime.of_float_s(time),
-                          updatedAt: Ptime.of_float_s(time),
-                        };
+                  /*                  let clientList =
+                                       Array.map(
+                                         (res: DsUserModel.client) => {
+                                           let returnClient = {
+                                             id: res.id,
+                                             name: res.name,
+                                             dataSheet: res.dataSheet,
+                                             applicationId: res.applicationId,
+                                             createdAt: Ptime.of_float_s(time),
+                                             updatedAt: Ptime.of_float_s(time),
+                                           };
 
-                        returnClient;
-                      },
-                      result,
-                    )
-                    |> Array.to_list;
+                                           returnClient;
+                                         },
+                                         result,
+                                      )*/
+                  let clientList = result |> Array.to_list;
 
                   Ok(Some(clientList)) |> Deferred.return;
                 }
