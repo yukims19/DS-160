@@ -96,17 +96,42 @@ let getSheetData = sheetId => {
             )
             |> Array.to_list;
 
-          let surname = List.assoc("$tbxAPP_SURNAME", keyAndValueList);
-          switch (surname) {
-          | Some(value) => print_endline("$tbxAPP_SURNAME" ++ ":" ++ value)
-          | None => print_endline("empty======")
-          };
-          Deferred.return();
+          Deferred.return(keyAndValueList);
         }
       );
     }
   );
 };
 
-let init = (_spec, ()) =>
-  getSheetData("1FM3H6mS1uIYzgvzMERVGLy2ncvUGx82uHT2vof5J1nY");
+let constructPageData = sheetData =>
+  sheetData
+  >>= (
+    sheetData => {
+      let surname = List.assoc("$tbxAPP_SURNAME", sheetData);
+      let giveName = List.assoc("$tbxAPP_GIVEN_NAME", sheetData);
+      let name: DsDataTypes.name = {
+        surname:
+          switch (surname) {
+          | Some(surname) => surname
+          | None => raise(Failure("Surname cannot be null"))
+          },
+        givenName:
+          switch (giveName) {
+          | Some(givenName) => givenName
+          | None => raise(Failure("Given_name cannot be null"))
+          },
+      };
+      print_endline(name.surname);
+      print_endline(name.givenName);
+
+      /*****RETURN*******/
+      Deferred.return();
+    }
+  );
+
+let init = (_spec, ()) => {
+  let summarySheetData =
+    getSheetData("1FM3H6mS1uIYzgvzMERVGLy2ncvUGx82uHT2vof5J1nY");
+  let _pageData = constructPageData(summarySheetData);
+  Deferred.return();
+};
