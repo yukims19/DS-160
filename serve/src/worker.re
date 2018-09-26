@@ -66,6 +66,37 @@ let getSheetData = sheetId => {
           );
           /*          let dataString = Yojson.Basic.to_string(rowDataArray);
                       print_endline("Body" ++ dataString);*/
+          let keyAndValueList =
+            Array.map(
+              value => {
+                let formattedValueArray =
+                  List.map(
+                    a => {
+                      let extractedValues =
+                        Yojson.Basic.Util.(
+                          a |> member("formattedValue") |> to_string
+                        );
+                      extractedValues;
+                    },
+                    value,
+                  )
+                  |> Array.of_list;
+
+                if (Array.length(formattedValueArray) > 1) {
+                  (formattedValueArray[0], Some(formattedValueArray[1]));
+                } else {
+                  (formattedValueArray[0], None);
+                };
+              },
+              arrayOfRowValuesList,
+            )
+            |> Array.to_list;
+
+          let surname = List.assoc("$tbxAPP_SURNAME", keyAndValueList);
+          switch (surname) {
+          | Some(value) => print_endline("$tbxAPP_SURNAME" ++ ":" ++ value)
+          | None => print_endline("empty======")
+          };
           Deferred.return();
         }
       );
