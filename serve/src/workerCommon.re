@@ -222,3 +222,44 @@ let optionListFullNames = (aliasSurnames, aliasGivenNames) =>
       ),
     )
   };
+
+let pluckNationality = makePluckerOne("NATIONALITY");
+let nationality = nation =>
+  switch (nation) {
+  | Some(nation) => nation
+  | None => raise(Failure("Nationality cannot be null"))
+  };
+
+let pluckOtherNationality = makePluckerMulti("OTHER_NATIONALITY");
+let pluckOtherPassportNum = makePluckerMulti("OTHER_PASSPORT_NUM");
+let optionListNationalityInfo = (nation, passport) =>
+  switch (nation, passport) {
+  | (None, None) => None
+  | (Some(nation), Some(passport)) =>
+    Some(
+      List.map2(
+        (nation, passport) => {
+          let passportNum =
+            switch (passport) {
+            | "N/A" => None
+            | _ => Some(passport)
+            };
+
+          ({nationality: nation, passportNum}: DsDataTypes.nationalityInfo);
+        },
+        nation,
+        passport,
+      ),
+    )
+  | (Some(_), None)
+  | (None, Some(_)) =>
+    raise(
+      Failure(
+        "OTHER_NATIONALITY and OTHER_PASSPORT_NUM must either both be absent or both be present. Please enter N/A for unknow passport number",
+      ),
+    )
+  };
+let pluckPermanentResident = makePluckerMulti("PERMANENT_RESIDENT");
+let pluckNationalId = makePluckerOne("NATIONAL_ID");
+let pluckSNN = makePluckerOne("SSN");
+let pluckTaxId = makePluckerOne("TAX_ID");
