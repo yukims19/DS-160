@@ -23,12 +23,12 @@ let personal1PageData = (worksheetValues: worksheetValues) : personal1 => {
     ),
   nativeFullName: pluckNativeFullName(worksheetValues),
   otherNames:
-    pluckOtherNames(
+    optionListFullNames(
       pluckAliasSurname(worksheetValues),
       pluckAliasGivenName(worksheetValues),
     ),
   telecodeName:
-    pluckTelecodeName(
+    optionFullName(
       pluckTelecodeSurname(worksheetValues),
       pluckTelecodeSurname(worksheetValues),
     ),
