@@ -33,9 +33,9 @@ type month =
   | Dec;
 
 type date = {
-  day: int,
+  day: string,
   month,
-  year: int,
+  year: string,
 };
 type shortAddress = {
   city: string,
@@ -43,16 +43,15 @@ type shortAddress = {
   country: string,
 };
 
-type peronsal1 = {
+type personal1 = {
   name,
-  nativeFullName: option(string), /*Native Alphabet --- so not string....*/
-  lastName: string,
+  nativeFullName: option(string), /*Native Alphabet ---UTF-8 so not string....*/
   otherNames: option(list(name)),
   telecodeName: option(name),
   sex,
   maritalStatus: marital,
-  dob: date,
-  pob: shortAddress,
+  dateOfBirth: date,
+  placeOfBirth: shortAddress,
 };
 
 /*-----------------Page2----------------*/
@@ -248,7 +247,7 @@ type stayStatus =
 type familyMember = {
   surnames: option(string),
   givenName: option(string),
-  dob: option(date),
+  dateOfBirth: option(date),
   usStatus: option(stayStatus),
 };
 
@@ -382,3 +381,42 @@ type tempWorkVisaInfo = {
   address,
   phoneNum: string,
 };
+
+let stringOfGender =
+  fun
+  | Female => "F"
+  | Male => "M";
+
+let stringOfMartialStatus =
+  fun
+  | Married => "M"
+  | Single => "S"
+  | Common => "C"
+  | Civil => "P"
+  | Widowed => "W"
+  | Divorced => "D"
+  | Seperate => "L"
+  | Other => "O";
+
+let stringOfMonth =
+  fun
+  | Jan => "Jan"
+  | Feb => "Feb"
+  | Mar => "Mar"
+  | Apr => "Apr"
+  | May => "May"
+  | Jun => "Jun"
+  | Jul => "Jul"
+  | Aug => "Aug"
+  | Sep => "Sep"
+  | Oct => "Oct"
+  | Nov => "Nov"
+  | Dec => "Dec";
+
+let stringOfDate = date =>
+  Printf.sprintf(
+    "%s %s, %s",
+    stringOfMonth(date.month),
+    date.day,
+    date.year,
+  );
