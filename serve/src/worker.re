@@ -16,6 +16,25 @@ let oneGraphQueryHeaderList = [
   ("Accept", "application/json"),
 ];
 
+let rowDataOfOneGraphQuery = resultJson =>
+  Yojson.Basic.Util.(
+    resultJson
+    |> member("data")
+    |> member("google")
+    |> member("sheets")
+    |> member("sheet")
+    |> member("sheets")
+    |> to_list
+    |> List.hd
+    |> member("data")
+    |> to_list
+    |> List.hd
+    |> member("rowData")
+    |> to_list
+  );
+
+type worksheetValues = list((string, list(string)));
+
 let getSheetData = sheetId => {
   print_endline("-----------------------here is the worker-------------");
   let headerList = oneGraphQueryHeaderList;
@@ -41,62 +60,56 @@ let getSheetData = sheetId => {
       |> Cohttp_async.Body.to_string
       >>= (
         body => {
+          open Yojson.Basic.Util;
           let bodyJson = Yojson.Basic.from_string(body);
-          let rowDataArray =
-            Yojson.Basic.Util.(
-              member("data", bodyJson)
-              |> member("google")
-              |> member("sheets")
-              |> member("sheet")
-              |> member("sheets")
-              |> to_list
-              |> List.hd
-              |> member("data")
-              |> to_list
-              |> List.hd
-              |> member("rowData")
-              |> to_list
-              |> Array.of_list
-            );
+          let allRows = rowDataOfOneGraphQuery(bodyJson);
 
-          let arrayOfRowValuesList =
-            Array.map(
-              rowValues => {
-                let a =
-                  Yojson.Basic.Util.(
-                    rowValues |> member("values") |> to_list
-                  );
-                a;
-              },
-              rowDataArray,
-            );
-          let keyAndValueList =
-            Array.map(
-              value => {
-                let formattedValueArray =
-                  List.map(
-                    a => {
-                      let extractedValues =
-                        Yojson.Basic.Util.(
-                          a |> member("formattedValue") |> to_string
-                        );
-                      extractedValues;
-                    },
-                    value,
-                  )
-                  |> Array.of_list;
+          let isEmptyRow = row => {
+            let values =
+              row
+              |> member("values")
+              |> to_list
+              |> List.map(member("formattedValue"));
 
-                if (Array.length(formattedValueArray) > 1) {
-                  (formattedValueArray[0], Some(formattedValueArray[1]));
-                } else {
-                  (formattedValueArray[0], None);
-                };
-              },
-              arrayOfRowValuesList,
-            )
-            |> Array.to_list;
+            let nonEmptyCells =
+              values
+              |> List.filter(cell =>
+                   switch (cell) {
+                   | `String(_) => true
+                   | `Null
+                   | _ => false
+                   }
+                 );
+            List.length(nonEmptyCells) == 0;
+          };
 
-          Deferred.return(keyAndValueList);
+          let rows = List.filter(row => ! isEmptyRow(row), allRows);
+
+          let rowToKeyValues = row => {
+            let cells =
+              row
+              |> member("values")
+              |> to_list
+              |> List.map(member("formattedValue"))
+              |> List.map(to_string_option);
+
+            let maybeKey = List.hd(cells);
+            let key =
+              switch (maybeKey) {
+              | None =>
+                raise(Failure("Missing label for field in spreadsheet"))
+              | Some(key) => String.lowercase_ascii(key)
+              };
+
+            let values =
+              Core.List.filter_map(~f=cell => cell, List.tl(cells));
+
+            (key, values);
+          };
+
+          let worksheetValues = List.map(rowToKeyValues, rows);
+
+          Deferred.return(worksheetValues);
         }
       );
     }
@@ -107,31 +120,22 @@ let constructPageData = sheetData =>
   sheetData
   >>= (
     sheetData => {
-      let surname = List.assoc("$tbxAPP_SURNAME", sheetData);
-      let giveName = List.assoc("$tbxAPP_GIVEN_NAME", sheetData);
-      let name: DsDataTypes.name = {
-        surname:
-          switch (surname) {
-          | Some(surname) => surname
-          | None => raise(Failure("Surname cannot be null"))
-          },
-        givenName:
-          switch (giveName) {
-          | Some(givenName) => givenName
-          | None => raise(Failure("Given_name cannot be null"))
-          },
-      };
-      print_endline(name.surname);
-      print_endline(name.givenName);
-
-      /*****RETURN*******/
+      let p1Data = DsPersonal1.personal1PageData(sheetData);
+      OneLog.infof(
+        "Got P1Data: %s",
+        DsPersonal1.stringOfPersonal1PageData(p1Data),
+      );
+      /* DsPersonal2.personal2PageData(sheetData); */
       Deferred.return();
     }
   );
 
 let init = (_spec, ()) => {
-  let summarySheetData =
-    getSheetData("1FM3H6mS1uIYzgvzMERVGLy2ncvUGx82uHT2vof5J1nY");
-  let _pageData = constructPageData(summarySheetData);
-  Deferred.return();
+  let _sheetId1 = "19CNUappgAuMqKAOHD0_1CusGHTlRMH7V4DbC03DUtrE";
+  let _sheetId2 = "1hR-GbybIfuEWOU76jZA31nBCodLDfZ1LHGCiXBMIQp8";
+  let _sheetId3 = "1FM3H6mS1uIYzgvzMERVGLy2ncvUGx82uHT2vof5J1nY";
+  let summarySheetData = getSheetData(_sheetId1);
+  let pageData = constructPageData(summarySheetData);
+  pageData;
+  /* Deferred.return();*/
 };
