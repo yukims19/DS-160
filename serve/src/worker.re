@@ -11,6 +11,11 @@ let getSheetDataQuery = sheetId =>
   "{\"query\":\"query {\\n  google {\\n    sheets {\\n      sheet(\\n        includeGridData: true\\n        id: \\\""
   ++ sheetId
   ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";
+
+/*  "{\"query\":\"query {\\n  google {\\n    sheets {\\n      sheet(\\n        includeGridData: true\\n        id: \\\""
+    ++ sheetId
+    ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";*/
+
 let oneGraphQueryHeaderList = [
   ("Authentication", "Bearer tQhJQyN55Q3guJou50YSyeY3B8Rn_dXHbs7zglGl8nU"),
   ("Accept", "application/json"),
@@ -125,16 +130,16 @@ let constructPageData = sheetData =>
         "Got P1Data: %s",
         DsPersonal1.stringOfPersonal1PageData(p1Data),
       );
-      /* DsPersonal2.personal2PageData(sheetData); */
+      let p2Data = DsPersonal2.personal2PageData(sheetData);
       Deferred.return();
     }
   );
 
 let init = (_spec, ()) => {
   let _sheetId1 = "19CNUappgAuMqKAOHD0_1CusGHTlRMH7V4DbC03DUtrE";
-  let _sheetId2 = "1hR-GbybIfuEWOU76jZA31nBCodLDfZ1LHGCiXBMIQp8";
+  let sheetId2 = "1hR-GbybIfuEWOU76jZA31nBCodLDfZ1LHGCiXBMIQp8";
   let _sheetId3 = "1FM3H6mS1uIYzgvzMERVGLy2ncvUGx82uHT2vof5J1nY";
-  let summarySheetData = getSheetData(_sheetId1);
+  let summarySheetData = getSheetData(sheetId2);
   let pageData = constructPageData(summarySheetData);
   pageData;
   /* Deferred.return();*/
