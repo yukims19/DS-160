@@ -420,3 +420,9 @@ let stringOfDate = date =>
     date.day,
     date.year,
   );
+
+let stringOfFullName = fullName =>
+  switch (fullName) {
+  | Some(name) => name
+  | None => "No native full name found"
+  };
