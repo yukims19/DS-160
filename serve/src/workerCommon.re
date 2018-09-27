@@ -189,7 +189,7 @@ let pluckNativeFullName = makePluckerOne("FULL_NAME_NATIVE");
 let pluckTelecodeSurname = makePluckerOne("TELECODE_SURNAME");
 let pluckTelecodeGivenName = makePluckerOne("TELECODE_GIVEN_NAME");
 
-let pluckTelecodeName = (surname, givenName) =>
+let optionFullName = (surname, givenName) =>
   switch (surname) {
   | Some(surname) =>
     switch (givenName) {
@@ -203,7 +203,7 @@ let pluckAliasSurname = makePluckerMulti("ALIAS_SURNAME");
 let pluckAliasGivenName = makePluckerMulti("ALIAS_GIVEN_NAME");
 
 /*TODO: NEED to Construct list here*/
-let pluckOtherNames = (aliasSurnames, aliasGivenNames) =>
+let optionListFullNames = (aliasSurnames, aliasGivenNames) =>
   switch (aliasGivenNames, aliasSurnames) {
   | (None, None) => None
   | (Some(givenNames), Some(surnames)) =>
