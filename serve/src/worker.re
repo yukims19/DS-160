@@ -98,7 +98,7 @@ let getSheetData = sheetId => {
               switch (maybeKey) {
               | None =>
                 raise(Failure("Missing label for field in spreadsheet"))
-              | Some(key) => String.lowercase_ascii(key)
+              | Some(key) => String.(lowercase_ascii(key) |> trim)
               };
 
             let values =
