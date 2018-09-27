@@ -1,4 +1,5 @@
 /* Country and Occupation data type????*/
+open CountryType;
 
 type name = {
   surname: string,
@@ -40,12 +41,12 @@ type date = {
 type shortAddress = {
   city: string,
   state: option(string),
-  country: string,
+  country,
 };
 
 type personal1 = {
   name,
-  nativeFullName: option(string), /*Native Alphabet ---UTF-8 so not string....*/
+  nativeFullName: option(string),
   otherNames: option(list(name)),
   telecodeName: option(name),
   sex,
@@ -56,14 +57,14 @@ type personal1 = {
 
 /*-----------------Page2----------------*/
 type nationalityInfo = {
-  nationality: string,
+  nationality: country,
   passportNum: option(string),
 };
 
 type personal2 = {
-  nationality: string,
+  nationality: country,
   otherNationality: option(list(nationalityInfo)),
-  permanentResident: option(list(string)),
+  permanentResident: option(list(country)),
   nationalId: option(string),
   ssn: option(string),
   taxId: option(string),
@@ -382,6 +383,7 @@ type tempWorkVisaInfo = {
   phoneNum: string,
 };
 
+/*****************String of Data***************************/
 let stringOfGender =
   fun
   | Female => "F"

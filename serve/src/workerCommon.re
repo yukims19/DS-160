@@ -171,7 +171,7 @@ let pluckP1POBCity = makePluckerOne("PLACE_OF_BIRTH_CITY");
 let pluckP1POBState = makePluckerOne("PLACE_OF_BIRTH_STATE_PROVINCE");
 let pluckP1POBCountry = makePluckerOne("PLACE_OF_BIRTH_CNTRY");
 
-let pluckPlace = (city, state, country) : DsDataTypes.shortAddress => {
+let shortAddress = (city, state, country) : DsDataTypes.shortAddress => {
   city:
     switch (city) {
     | Some(city) => city
@@ -180,7 +180,7 @@ let pluckPlace = (city, state, country) : DsDataTypes.shortAddress => {
   state,
   country:
     switch (country) {
-    | Some(country) => country
+    | Some(country) => CountryType.countryTypeOfFullCountryName(country)
     | None => raise(Failure("COUNTRY cannot be null"))
     },
 };
@@ -226,7 +226,7 @@ let optionListFullNames = (aliasSurnames, aliasGivenNames) =>
 let pluckNationality = makePluckerOne("NATIONALITY");
 let nationality = nation =>
   switch (nation) {
-  | Some(nation) => nation
+  | Some(nation) => CountryType.countryTypeOfFullCountryName(nation)
   | None => raise(Failure("Nationality cannot be null"))
   };
 
@@ -244,8 +244,8 @@ let optionListNationalityInfo = (nation, passport) =>
             | "N/A" => None
             | _ => Some(passport)
             };
-
-          ({nationality: nation, passportNum}: DsDataTypes.nationalityInfo);
+          let nationality = CountryType.countryTypeOfFullCountryName(nation);
+          ({nationality, passportNum}: DsDataTypes.nationalityInfo);
         },
         nation,
         passport,
@@ -260,6 +260,17 @@ let optionListNationalityInfo = (nation, passport) =>
     )
   };
 let pluckPermanentResident = makePluckerMulti("PERMANENT_RESIDENT");
+let optionListCountry = countries =>
+  switch (countries) {
+  | Some(countries) =>
+    Some(
+      List.map(
+        country => CountryType.countryTypeOfFullCountryName(country),
+        countries,
+      ),
+    )
+  | None => None
+  };
 let pluckNationalId = makePluckerOne("NATIONAL_ID");
 let pluckSNN = makePluckerOne("SSN");
 let pluckTaxId = makePluckerOne("TAX_ID");

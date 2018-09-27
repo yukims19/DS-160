@@ -8,7 +8,8 @@ let personal2PageData = (worksheetValues: worksheetValues) : personal2 => {
       pluckOtherNationality(worksheetValues),
       pluckOtherPassportNum(worksheetValues),
     ),
-  permanentResident: pluckPermanentResident(worksheetValues),
+  permanentResident:
+    optionListCountry(pluckPermanentResident(worksheetValues)),
   nationalId: pluckNationalId(worksheetValues),
   ssn: pluckSNN(worksheetValues),
   taxId: pluckTaxId(worksheetValues),
