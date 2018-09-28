@@ -3,7 +3,8 @@ open DsDataTypes;
 
 let stringOfPersonal1PageData = (p1Data: DsDataTypes.personal1) =>
   Printf.sprintf(
-    "Surname: %s
+    "
+Surname: %s
 Given name: %s
 Full name: %s
 Gender: %s
@@ -11,7 +12,7 @@ Marital Status: %s
 Date of birth: %s",
     p1Data.name.surname,
     p1Data.name.givenName,
-    stringOfFullName(p1Data.nativeFullName),
+    stringOfOptionString("Native Full Name", p1Data.nativeFullName),
     stringOfGender(p1Data.sex),
     stringOfMartialStatus(p1Data.maritalStatus),
     stringOfDate(p1Data.dateOfBirth),
