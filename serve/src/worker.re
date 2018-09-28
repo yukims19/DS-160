@@ -131,6 +131,15 @@ let constructPageData = sheetData =>
         DsPersonal1.stringOfPersonal1PageData(p1Data),
       );
       let p2Data = DsPersonal2.personal2PageData(sheetData);
+      OneLog.infof(
+        "Got P2Data: %s",
+        DsPersonal2.stringOfPersonal2PageData(p2Data),
+      );
+      let p3Data = AddressAndPhone.addressAndPhonePageData(sheetData);
+      OneLog.infof(
+        "Got P3Data: %s",
+        AddressAndPhone.stringOfAddressAndPhonePageData(p3Data),
+      );
       Deferred.return();
     }
   );
