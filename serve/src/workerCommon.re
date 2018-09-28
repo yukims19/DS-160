@@ -48,6 +48,12 @@ let makePluckerMulti = (key, worksheetValues: worksheetValues) => {
   };
 };
 
+let nonOptionString = (key, value) =>
+  switch (value) {
+  | Some(realValue) => realValue
+  | None => raise(Failure(Printf.sprintf("%s cannot be empty", key)))
+  };
+
 let pluckGivenName = makePluckerOne("GIVEN_NAME");
 let pluckSurname = makePluckerOne("SURNAME");
 let pluckGenderRaw = makePluckerOne("GENDER");
@@ -99,16 +105,8 @@ let pluckGender = worksheetValues =>
   );
 
 let fullName = (surname, givenName) : DsDataTypes.name => {
-  surname:
-    switch (surname) {
-    | Some(surname) => surname
-    | None => raise(Failure("Surname cannot be null"))
-    },
-  givenName:
-    switch (givenName) {
-    | Some(givenName) => givenName
-    | None => raise(Failure("Given_name cannot be null"))
-    },
+  surname: nonOptionString("SURNAME", surname),
+  givenName: nonOptionString("GIVEN_NAME", givenName),
 };
 
 let pluckP1DOBDay = makePluckerOne("DATE_OF_BIRTHDay");
@@ -116,11 +114,7 @@ let pluckP1DOBMonth = makePluckerOne("DATE_OF_BIRTHMonth");
 let pluckP1DOBYear = makePluckerOne("DATE_OF_BIRTHYear");
 
 let pluckDate = (day, month, year) : DsDataTypes.date => {
-  day:
-    switch (day) {
-    | Some(day) => day
-    | None => raise(Failure("day cannot be null"))
-    },
+  day: nonOptionString("day", day),
   month:
     switch (month) {
     | Some(month) =>
@@ -160,11 +154,7 @@ let pluckDate = (day, month, year) : DsDataTypes.date => {
       }
     | None => raise(Failure("Surname cannot be null"))
     },
-  year:
-    switch (year) {
-    | Some(year) => year
-    | None => raise(Failure("year cannot be null"))
-    },
+  year: nonOptionString("year", year),
 };
 
 let pluckP1POBCity = makePluckerOne("PLACE_OF_BIRTH_CITY");
@@ -172,11 +162,7 @@ let pluckP1POBState = makePluckerOne("PLACE_OF_BIRTH_STATE_PROVINCE");
 let pluckP1POBCountry = makePluckerOne("PLACE_OF_BIRTH_CNTRY");
 
 let shortAddress = (city, state, country) : DsDataTypes.shortAddress => {
-  city:
-    switch (city) {
-    | Some(city) => city
-    | None => raise(Failure("CITY cannot be null"))
-    },
+  city: nonOptionString("CITY", city),
   state,
   country:
     switch (country) {
