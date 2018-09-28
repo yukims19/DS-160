@@ -166,7 +166,10 @@ let shortAddress = (city, state, country) : DsDataTypes.shortAddress => {
   state,
   country:
     switch (country) {
-    | Some(country) => CountryType.countryTypeOfFullCountryName(country)
+    | Some(country) =>
+      CountryType.countryTypeOfFullCountryName(
+        String.capitalize_ascii(country),
+      )
     | None => raise(Failure("COUNTRY cannot be null"))
     },
 };
@@ -210,9 +213,12 @@ let optionListFullNames = (aliasSurnames, aliasGivenNames) =>
   };
 
 let pluckNationality = makePluckerOne("NATIONALITY");
-let nationality = nation =>
+let nation = nation =>
   switch (nation) {
-  | Some(nation) => CountryType.countryTypeOfFullCountryName(nation)
+  | Some(nation) =>
+    String.map(a => Char.uppercase_ascii(a), nation)
+    |> CountryType.countryTypeOfFullCountryName
+
   | None => raise(Failure("Nationality cannot be null"))
   };
 
@@ -230,7 +236,10 @@ let optionListNationalityInfo = (nation, passport) =>
             | "N/A" => None
             | _ => Some(passport)
             };
-          let nationality = CountryType.countryTypeOfFullCountryName(nation);
+          let nationality =
+            String.map(a => Char.uppercase_ascii(a), nation)
+            |> CountryType.countryTypeOfFullCountryName;
+
           ({nationality, passportNum}: DsDataTypes.nationalityInfo);
         },
         nation,
@@ -251,7 +260,10 @@ let optionListCountry = countries =>
   | Some(countries) =>
     Some(
       List.map(
-        country => CountryType.countryTypeOfFullCountryName(country),
+        country =>
+          CountryType.countryTypeOfFullCountryName(
+            String.capitalize_ascii(country),
+          ),
         countries,
       ),
     )
