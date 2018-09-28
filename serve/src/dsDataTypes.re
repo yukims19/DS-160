@@ -76,7 +76,7 @@ type address = {
   city: string,
   state: option(string),
   zipCode: option(string),
-  country: string,
+  country,
 };
 type addressAndPhone = {
   homeAddress: address,
@@ -423,8 +423,82 @@ let stringOfDate = date =>
     date.year,
   );
 
-let stringOfFullName = fullName =>
-  switch (fullName) {
-  | Some(name) => name
-  | None => "No native full name found"
+let stringOfOptionString = (key, value) =>
+  switch (value) {
+  | Some(value) => value
+  | None => "No value found for " ++ key
+  };
+let stringOfOptionListNationalityInfo = otherNationality =>
+  switch (otherNationality) {
+  | Some(listOfNationalityInfo) =>
+    String.concat(
+      "/",
+      List.map(
+        nationalityInfo =>
+          switch (nationalityInfo.passportNum) {
+          | Some(num) =>
+            "Nation: "
+            ++ stringOfCountry(nationalityInfo.nationality)
+            ++ "Passport Number: "
+            ++ num
+          | None =>
+            "Nation: "
+            ++ stringOfCountry(nationalityInfo.nationality)
+            ++ "Passport Number Unknown"
+          },
+        listOfNationalityInfo,
+      ),
+    )
+  | None => "No Other Nationality"
+  };
+
+let stringOfOptionListCountry = countries =>
+  switch (countries) {
+  | Some(countries) =>
+    String.concat(
+      "/",
+      List.map(country => stringOfCountry(country), countries),
+    )
+  | None => "No permanent resident information found"
+  };
+let stringOfAddress = address => {
+  let streetL1 = address.streetL1;
+  let streetL2 =
+    switch (address.streetL2) {
+    | Some(street) => street
+    | None => "N/A"
+    };
+  let city = address.city;
+  let state =
+    switch (address.state) {
+    | Some(state) => state
+    | None => "N/A"
+    };
+  let zipCode =
+    switch (address.zipCode) {
+    | Some(code) => code
+    | None => "N/A"
+    };
+  let country = CountryType.stringOfCountry(address.country);
+  Printf.sprintf(
+    "
+     Street1:%s,
+     Street2: %s,
+     City: %s,
+     State; %s,
+     ZipCode: %s,
+     Country: %s
+     ",
+    streetL1,
+    streetL2,
+    city,
+    state,
+    zipCode,
+    country,
+  );
+};
+let stringOfOptionAddress = address =>
+  switch (address) {
+  | Some(address) => stringOfAddress(address)
+  | None => "No Address Found"
   };
