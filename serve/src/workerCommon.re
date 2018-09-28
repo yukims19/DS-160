@@ -272,3 +272,47 @@ let optionListCountry = countries =>
 let pluckNationalId = makePluckerOne("NATIONAL_ID");
 let pluckSNN = makePluckerOne("SSN");
 let pluckTaxId = makePluckerOne("TAX_ID");
+
+let pluckHomeStreet1 = makePluckerOne("HOME_ADDR_LN1");
+let pluckHomeStreet2 = makePluckerOne("HOME_ADDR_LN2");
+let pluckHomeCity = makePluckerOne("HOME_ADDR_CITY");
+let pluckHomeState = makePluckerOne("HOME_ADDR_STATE");
+let pluckHomeZipCode = makePluckerOne("HOME_ADDR_POSTAL_CD");
+let pluckHomeCountry = makePluckerOne("HOME_ADDR_COUNTRY");
+let address =
+    (streetL1, streetL2, city, state, zipCode, country)
+    : DsDataTypes.address => {
+  streetL1: nonOptionString("StreetL1", streetL1),
+  streetL2,
+  city: nonOptionString("CITY", city),
+  state,
+  zipCode,
+  country: nation(country),
+};
+
+let pluckMailingStreet1 = makePluckerOne("MAILING_ADDR_LN1");
+let pluckMailingStreet2 = makePluckerOne("MAILING_ADDR_LN2");
+let pluckMailingCity = makePluckerOne("MAILING_ADDR_CITY");
+let pluckMailingState = makePluckerOne("MAILING_ADDR_STATE");
+let pluckMailingZipCode = makePluckerOne("MAILING_ADDR_POSTAL_CD");
+let pluckMailingCountry = makePluckerOne("MAILING_ADDR_COUNTRY");
+let optionAddress = (streetL1, streetL2, city, state, zipCode, country) =>
+  switch (streetL1) {
+  | Some(street) =>
+    Some(
+      {
+        streetL1: nonOptionString("StreetL1", streetL1),
+        streetL2,
+        city: nonOptionString("CITY", city),
+        state,
+        zipCode,
+        country: nation(country),
+      }: DsDataTypes.address,
+    )
+  | None => None
+  };
+
+let pluckPrimaryPhone = makePluckerOne("HOME_TEL");
+let pluckSecPhone = makePluckerOne("MOBILE_TEL");
+let pluckWorkPhone = makePluckerOne("HOME_TEL");
+let pluckEmail = makePluckerOne("EMAIL");
