@@ -157,6 +157,30 @@ let pluckDate = (day, month, year) : DsDataTypes.date => {
   year: nonOptionString("year", year),
 };
 
+let pluckOptionDate = (day, month, year) =>
+  switch (day) {
+  | Some(d) =>
+    switch (month) {
+    | Some(m) =>
+      switch (year) {
+      | Some(y) => Some(pluckDate(d, m, y))
+      | None =>
+        raise(
+          Failure(
+            "Date, Month, Year should all have some value or all be empty",
+          ),
+        )
+      }
+    | None =>
+      raise(
+        Failure(
+          "Date, Month, Year should all have some value or all be empty",
+        ),
+      )
+    }
+  | None => None
+  };
+
 let pluckP1POBCity = makePluckerOne("PLACE_OF_BIRTH_CITY");
 let pluckP1POBState = makePluckerOne("PLACE_OF_BIRTH_STATE_PROVINCE");
 let pluckP1POBCountry = makePluckerOne("PLACE_OF_BIRTH_CNTRY");
@@ -298,7 +322,7 @@ let pluckMailingZipCode = makePluckerOne("MAILING_ADDR_POSTAL_CD");
 let pluckMailingCountry = makePluckerOne("MAILING_ADDR_COUNTRY");
 let optionAddress = (streetL1, streetL2, city, state, zipCode, country) =>
   switch (streetL1) {
-  | Some(street) =>
+  | Some(_street) =>
     Some(
       {
         streetL1: nonOptionString("StreetL1", streetL1),
@@ -316,3 +340,98 @@ let pluckPrimaryPhone = makePluckerOne("HOME_TEL");
 let pluckSecPhone = makePluckerOne("MOBILE_TEL");
 let pluckWorkPhone = makePluckerOne("HOME_TEL");
 let pluckEmail = makePluckerOne("EMAIL");
+
+let pluckPassportRaw = makePluckerOne("PASSPORT_TYPE");
+let pluckPassport = worksheetValues : DsDataTypes.passType =>
+  switch (pluckPassportRaw(worksheetValues)) {
+  | Some(passType) =>
+    switch (passType) {
+    | "Regular" => Regular
+    | "Official" => Official
+    | "Diplomatic" => Diplomatic
+    | "Laissez" => Laissez
+    | "Other" => Other
+    | _value =>
+      raise(
+        Failure(
+          "Invalide Passport type: "
+          ++ _value
+          ++ ". Please enter Regular, Official, Diplomatic, Laissez or Other",
+        ),
+      )
+    }
+  | None => raise(Failure("PASSPORT_TYPE cannot be empty"))
+  };
+
+let pluckPassportNum = makePluckerOne("PASSPORT_NUM");
+let pluckPassportBookNum = makePluckerOne("PASSPORT_BOOK_NUM");
+let pluckPassportIssuedCountry = makePluckerOne("PASSPORT_ISSUED_COUNTRY");
+let pluckPassportIssuedCity = makePluckerOne("PASSPORT_ISSUED_IN_CITY");
+let pluckPassportIssuedState = makePluckerOne("PASSPORT_ISSUED_IN_STATE");
+let pluckPassportIssuedCountry = makePluckerOne("PASSPORT_ISSUED_IN_COUNTRY");
+
+let pluckPassportIssuedDay = makePluckerOne("PASSPORT_ISSUED_DAY");
+let pluckPassportIssuedMonth = makePluckerOne("PASSPORT_ISSUED_MONTH");
+let pluckPassportIssuedYear = makePluckerOne("PASSPORT_ISSUED_YEAR");
+
+let pluckPassportExprieDay = makePluckerOne("PASSPORT_EXPIRE_DAY");
+let pluckPassportExprieMonth = makePluckerOne("PASSPORT_EXPIRE_MONTH");
+let pluckPassportExprieYear = makePluckerOne("PASSPORT_EXPIRE_YEAR");
+
+let pluckLostPassportNum = makePluckerMulti("LOST_PASSPORT_NUM");
+let pluckLostPassportIssuedCountry =
+  makePluckerMulti("LOST_PASSPORT_ISSUED_COUNTRY");
+let pluckLostPasssportExplain = makePluckerMulti("LOST_PASSPORT_EXPLAIN");
+
+let optionListOfLostPassInfo =
+    (passNum, countryIssue, explain)
+    : option(list(DsDataTypes.lostPassInfo)) =>
+  switch (passNum, countryIssue, explain) {
+  | (None, None, None) => None
+  | (Some(num), Some(country), Some(explain)) =>
+    if (List.length(num) == List.length(country)
+        && List.length(country) == List.length(explain)) {
+      let numAndCountryList =
+        List.map2(
+          (num, country) => {
+            let passportNum =
+              switch (num) {
+              | "N/A" => None
+              | _ => Some(num)
+              };
+            let nation =
+              String.map(a => Char.uppercase_ascii(a), country)
+              |> CountryType.countryTypeOfFullCountryName;
+
+            ({passportNum, nationality: nation}: DsDataTypes.nationalityInfo);
+          },
+          num,
+          country,
+        );
+      let numAndCountryAndExplainList =
+        List.map2(
+          (numAndCountry: DsDataTypes.nationalityInfo, explain) => (
+            {
+              passNum: numAndCountry.passportNum,
+              countryIssue: numAndCountry.nationality,
+              explain,
+            }: DsDataTypes.lostPassInfo
+          ),
+          numAndCountryList,
+          explain,
+        );
+      Some(numAndCountryAndExplainList);
+    } else {
+      raise(
+        Failure(
+          "Lost passport number, issued country and explain needs to be same length",
+        ),
+      );
+    }
+  | _ =>
+    raise(
+      Failure(
+        "OTHER_NATIONALITY and OTHER_PASSPORT_NUM must either both be absent or both be present. Please enter N/A for unknow passport number",
+      ),
+    )
+  };

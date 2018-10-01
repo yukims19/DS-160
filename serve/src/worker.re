@@ -12,10 +12,6 @@ let getSheetDataQuery = sheetId =>
   ++ sheetId
   ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";
 
-/*  "{\"query\":\"query {\\n  google {\\n    sheets {\\n      sheet(\\n        includeGridData: true\\n        id: \\\""
-    ++ sheetId
-    ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";*/
-
 let oneGraphQueryHeaderList = [
   ("Authentication", "Bearer tQhJQyN55Q3guJou50YSyeY3B8Rn_dXHbs7zglGl8nU"),
   ("Accept", "application/json"),
@@ -140,6 +136,12 @@ let constructPageData = sheetData =>
         "Got P3Data: %s",
         AddressAndPhone.stringOfAddressAndPhonePageData(p3Data),
       );
+      let p4Data = Passport.passportPageData(sheetData);
+      OneLog.infof(
+        "Got P4Data: %s",
+        Passport.stringOfPassportPageData(p4Data),
+      );
+
       Deferred.return();
     }
   );

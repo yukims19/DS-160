@@ -88,7 +88,7 @@ type addressAndPhone = {
 };
 /*-----------------Page4----------------*/
 type passType =
-  | Result
+  | Regular
   | Official
   | Diplomatic
   | Laissez
@@ -96,7 +96,7 @@ type passType =
 
 type lostPassInfo = {
   passNum: option(string),
-  countryIssue: string,
+  countryIssue: country,
   explain: string,
 };
 
@@ -106,7 +106,7 @@ type passport = {
   passBookNum: option(string),
   countryIssue: string,
   placeIssue: shortAddress,
-  isscueDate: date,
+  issueDate: date,
   expirationDate: option(date),
   lostPass: option(list(lostPassInfo)),
 };
@@ -415,6 +415,14 @@ let stringOfMonth =
   | Nov => "Nov"
   | Dec => "Dec";
 
+let stringOfPassportType =
+  fun
+  | Regular => "Regular"
+  | Official => "Official"
+  | Diplomatic => "Diplomatic"
+  | Laissez => "Laissez"
+  | Other => "Other";
+
 let stringOfDate = date =>
   Printf.sprintf(
     "%s %s, %s",
@@ -422,6 +430,17 @@ let stringOfDate = date =>
     date.day,
     date.year,
   );
+let stringOfOptionDate = date =>
+  switch (date) {
+  | Some(date) =>
+    Printf.sprintf(
+      "%s %s, %s",
+      stringOfMonth(date.month),
+      date.day,
+      date.year,
+    )
+  | None => "No Date Found"
+  };
 
 let stringOfOptionString = (key, value) =>
   switch (value) {
@@ -501,4 +520,52 @@ let stringOfOptionAddress = address =>
   switch (address) {
   | Some(address) => stringOfAddress(address)
   | None => "No Address Found"
+  };
+
+let stringOfShortAddress = (shortAddress: shortAddress) => {
+  let city = shortAddress.city;
+  let state =
+    switch (shortAddress.state) {
+    | Some(state) => state
+    | None => "N/A"
+    };
+  let country = CountryType.stringOfCountry(shortAddress.country);
+  Printf.sprintf(
+    "
+       City: %s,
+       State; %s,
+       Country: %s
+       ",
+    city,
+    state,
+    country,
+  );
+};
+
+let stringOfLostPassport = (lostPass: option(list(lostPassInfo))) =>
+  switch (lostPass) {
+  | Some(listOfLostPass) =>
+    String.concat(
+      "/",
+      List.map(
+        (lostPass: lostPassInfo) =>
+          switch (lostPass.passNum) {
+          | Some(num) =>
+            "Nation: "
+            ++ stringOfCountry(lostPass.countryIssue)
+            ++ "Passport Number: "
+            ++ num
+            ++ "Explain: "
+            ++ lostPass.explain
+          | None =>
+            "Nation: "
+            ++ stringOfCountry(lostPass.countryIssue)
+            ++ "Passport Number Unknown"
+            ++ "Explain: "
+            ++ lostPass.explain
+          },
+        listOfLostPass,
+      ),
+    )
+  | None => "No Other Nationality"
   };
