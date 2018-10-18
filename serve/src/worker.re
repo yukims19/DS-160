@@ -13,7 +13,7 @@ let getSheetDataQuery = sheetId =>
   ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";
 
 let oneGraphQueryHeaderList = [
-  ("Authentication", "Bearer EllXOnjB6_gB3Aq9MQ55c1u4Ymz4AFyHfx9jEBuhzsQ"),
+  ("Authentication", "Bearer Mwelv-VcZ4wxiKZ1i0tgTyDyr6pIjiaUQMnfdy8ANJY"),
   ("Accept", "application/json"),
 ];
 
@@ -159,6 +159,8 @@ let constructPageData = sheetData =>
         "Got P8Data: %s",
         UsContact.stringOfUSContactPageData(p8Data),
       );
+      let p9Data = Family.familyPageData(sheetData);
+      OneLog.infof("Got P9Data: %s", Family.stringOfFamilyPageData(p9Data));
       Deferred.return();
     }
   );

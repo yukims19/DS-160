@@ -164,27 +164,14 @@ let pluckDate = (day, month, year) : DsDataTypes.date => {
 };
 
 let pluckOptionDate = (day, month, year) =>
-  switch (day) {
-  | Some(d) =>
-    switch (month) {
-    | Some(m) =>
-      switch (year) {
-      | Some(y) => Some(pluckDate(d, m, y))
-      | None =>
-        raise(
-          Failure(
-            "Date, Month, Year should all have some value or all be empty",
-          ),
-        )
-      }
-    | None =>
-      raise(
-        Failure(
-          "Date, Month, Year should all have some value or all be empty",
-        ),
-      )
-    }
-  | None => None
+  switch (day, month, year) {
+  | (None, None, None) => None
+  | (Some(day), Some(month), Some(year)) =>
+    Some(pluckDate(Some(day), Some(month), Some(year)))
+  | _ =>
+    raise(
+      Failure("Date, Month, Year should all have some value or all be empty"),
+    )
   };
 
 let pluckP1POBCity = makePluckerOne("PLACE_OF_BIRTH_CITY");
@@ -853,3 +840,112 @@ let pluckContactAddressCountry = makePluckerOne("US_Contact_ADDR_Country");
 
 let pluckContactPhoneNum = makePluckerOne("US_Contact_HOME_TEL");
 let pluckContactEmail = makePluckerOne("US_Contact_EMAIL_ADDR");
+
+let pluckFatherSurname = makePluckerOne("FATHER_SURNAME");
+let pluckFatherGiveName = makePluckerOne("FATHER_Given_Name");
+
+let pluckFatherDOBDate = makePluckerOne("Father_Date_Of_Birth_Day");
+let pluckFatherDOBMonth = makePluckerOne("Father_Date_Of_Birth_Month");
+let pluckFatherDOBYear = makePluckerOne("Father_Date_Of_Birth_Year");
+let pluckFatherStayStatus = makePluckerOne("FATHER_Stay_STATUS");
+
+let pluckMotherSurname = makePluckerOne("MOTHER_SURNAME");
+let pluckMotherGiveName = makePluckerOne("MOTHER_Given_Name");
+
+let pluckMotherDOBDate = makePluckerOne("Mother_Date_Of_Birth_Day");
+let pluckMotherDOBMonth = makePluckerOne("Mother_Date_Of_Birth_Month");
+let pluckMotherDOBYear = makePluckerOne("Mother_Date_Of_Birth_Year");
+let pluckMotherStayStatus = makePluckerOne("MOTHER_Stay_STATUS");
+
+let pluckStayStatus = stayStatus : DsDataTypes.stayStatus =>
+  switch (stayStatus) {
+  | "Citizen" => Citizen
+  | "LPR" => LPR
+  | "NonImmigrant" => NonImmigrant
+  | "Other" => Other
+  | _ =>
+    raise(
+      Failure(
+        "Invalid value for Stay Status. Please enter
+        Citizen,
+        LPR,
+        NonImmigrant or
+        Other",
+      ),
+    )
+  };
+let pluckFamilyMember =
+    (surname, givenName, day, month, year, stayStatusRaw)
+    : DsDataTypes.familyMember => {
+  surname,
+  givenName,
+  dateOfBirth: pluckOptionDate(day, month, year),
+  stayStatus:
+    switch (stayStatusRaw) {
+    | None => None
+    | Some(usStatusRaw) => Some(pluckStayStatus(usStatusRaw))
+    },
+};
+
+let pluckRelativeSurname = makePluckerMulti("RELATIVE_SURNAME");
+let pluckRelativeGiveName = makePluckerMulti("RELATIVE_Given_Name");
+let pluckRelativeRelationshipRaw = makePluckerMulti("RELATIVE_Relationship");
+let pluckRelativeStayStatus = makePluckerMulti("RELATIVE_Stay_STATUS");
+let pluckRelativeRelationship =
+    relativeRelationshipRaw
+    : DsDataTypes.relativeRelationship =>
+  switch (relativeRelationshipRaw) {
+  | "Sibling" => Sibling
+  | "Spouse" => Spouse
+  | "Child" => Child
+  | "Fiance" => Fiance
+  | _ =>
+    raise(
+      Failure(
+        "Invalid value for Relative Relationship. Please enter       Sibling
+        Spouse
+        Child or
+        Fiance",
+      ),
+    )
+  };
+
+let pluckOptionListRelativeMember =
+    (surnames, givenNames, reltionshipsRaw, stayStatuses)
+    : option(list(DsDataTypes.relativeMember)) =>
+  switch (surnames, givenNames, reltionshipsRaw, stayStatuses) {
+  | (None, None, None, None) => None
+  | (
+      Some(surnames),
+      Some(givenNames),
+      Some(reltionshipsRaw),
+      Some(stayStatuses),
+    ) =>
+    List.(
+      length(surnames) == length(givenNames)
+      && length(givenNames) == length(reltionshipsRaw)
+      && length(reltionshipsRaw) == length(stayStatuses)
+    ) ?
+      Some(
+        List.mapi(
+          (idx, surname) => (
+            {
+              name:
+                fullName(Some(surname), Some(List.nth(givenNames, idx))),
+              relativeRelationship:
+                pluckRelativeRelationship(List.nth(reltionshipsRaw, idx)),
+              stayStatus: pluckStayStatus(List.nth(stayStatuses, idx)),
+            }: DsDataTypes.relativeMember
+          ),
+          surnames,
+        ),
+      ) :
+      raise(
+        Failure("Name, Relationship, and Stay Status must be in same length"),
+      )
+
+  | _ =>
+    raise(
+      Failure("Name, Relationship, and Stay Status must be in same length"),
+    )
+  };

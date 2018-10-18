@@ -246,10 +246,10 @@ type stayStatus =
   | NonImmigrant
   | Other;
 type familyMember = {
-  surnames: option(string),
+  surname: option(string),
   givenName: option(string),
   dateOfBirth: option(date),
-  usStatus: option(stayStatus),
+  stayStatus: option(stayStatus),
 };
 
 type relativeRelationship =
@@ -753,4 +753,61 @@ let stringOfContactRelationship = contactRelationship =>
   | Employer => "Employer"
   | School => "School"
   | Other => "Other"
+  };
+
+let stringOfStayStatus = stayStatus =>
+  switch (stayStatus) {
+  | Citizen => "Citizen"
+  | LPR => "LPR"
+  | NonImmigrant => "NonImmigrant"
+  | Other => "Other"
+  };
+
+let stringOfFamilyMember = familyMember =>
+  Printf.sprintf(
+    "
+     %s
+     %s
+     %s
+     %s
+     ",
+    stringOfOptionString("Surname", familyMember.surname),
+    stringOfOptionString("GivenName", familyMember.givenName),
+    switch (familyMember.dateOfBirth) {
+    | None => "UnKnown"
+    | Some(date) => stringOfDate(date)
+    },
+    switch (familyMember.stayStatus) {
+    | None => "N/A"
+    | Some(status) => stringOfStayStatus(status)
+    },
+  );
+
+let stringOfRelativeRelationship = relationship =>
+  switch (relationship) {
+  | Sibling => "Sibling"
+  | Spouse => "Spouse"
+  | Child => "Child"
+  | Fiance => "Fiance"
+  };
+let stringOfRelativeMember =
+    (optionListRelativeMember: option(list(relativeMember))) =>
+  switch (optionListRelativeMember) {
+  | None => "N/A"
+  | Some(listRelativeMember) =>
+    List.map(
+      (relativeMember: relativeMember) =>
+        Printf.sprintf(
+          "
+           %s,
+           %s,
+           %s,
+           ",
+          relativeMember.name.surname ++ ", " ++ relativeMember.name.givenName,
+          stringOfRelativeRelationship(relativeMember.relativeRelationship),
+          stringOfStayStatus(relativeMember.stayStatus),
+        ),
+      listRelativeMember,
+    )
+    |> List.fold_left((a, b) => a ++ "/" ++ b, "")
   };
