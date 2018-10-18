@@ -612,9 +612,9 @@ let pluckCompanion =
     )
   };
 
-let pluckPreviousVisitDay = makePluckerMulti("Prev_US_Visite_Day");
-let pluckPreviousVisitMonth = makePluckerMulti("Prev_US_Visite_Month");
-let pluckPreviousVisitYear = makePluckerMulti("Prev_US_Visite_Year");
+let pluckPreviousVisitDay = makePluckerMulti("Prev_US_Visit_Day");
+let pluckPreviousVisitMonth = makePluckerMulti("Prev_US_Visit_Month");
+let pluckPreviousVisitYear = makePluckerMulti("Prev_US_Visit_Year");
 
 let pluckListDate = (days, months, years) =>
   switch (days, months, years) {
@@ -636,9 +636,9 @@ let pluckListDate = (days, months, years) =>
   };
 
 let pluckPreviousVisiteStayTimeNumber =
-  makePluckerMulti("Prev_US_Visite_Stay_Time_Number");
+  makePluckerMulti("Prev_US_Visit_Stay_Time_Number");
 let pluckPreviousVisiteStayTimeUnitRaw =
-  makePluckerMulti("Prev_US_Visite_Stay_Time_Unit");
+  makePluckerMulti("Prev_US_Visit_Stay_Time_Unit");
 
 let pluckListTimeUnit = listTimeUnitRaw =>
   List.map(
@@ -797,3 +797,59 @@ let pluckPreviouVisa =
 
 let pluckRefusedExpl = makePluckerOne("PREV_Visa_Refused_Expl");
 let pluckPetitionExpl = makePluckerOne("PREV_Visa_Petition_Expl");
+
+let pluckUSContactSurname = makePluckerOne("US_Contact_SURNAME");
+let pluckUSContactGiveName = makePluckerOne("US_Contact_Given_name");
+let pluckUSContactOrg = makePluckerOne("US_Contact_Org");
+
+let pluckContactPersonOrOrg =
+    (org, surname, givenName)
+    : DsDataTypes.contactPersonOrOrg =>
+  switch (org, surname, givenName) {
+  | (Some(org), _, _) => Org(org)
+  | (None, Some(surname), Some(givenName)) =>
+    Person(fullName(Some(surname), Some(givenName)))
+  | _ =>
+    raise(
+      Failure("Please enter either Org Name or Person Surname and Givename"),
+    )
+  };
+
+let pluckContactRelationshipRaw = makePluckerOne("US_Contact_Relationship");
+
+let pluckContactRelationship =
+    relationshipRaw
+    : DsDataTypes.contactRelationship =>
+  switch (relationshipRaw) {
+  | "Relative" => Relative
+  | "Spouse" => Spouse
+  | "Friend" => Friend
+  | "Bussiness" => Bussiness
+  | "Employer" => Employer
+  | "School" => School
+  | "Other" => Other
+  | _ =>
+    raise(
+      Failure(
+        "Invalid value for relatinoship. Please enter
+          Relative,
+          Spouse,
+          Friend,
+          Bussiness,
+          Employer,
+          School or
+          Other",
+      ),
+    )
+  };
+
+let pluckContactAddressStreet1 = makePluckerOne("US_Contact_ADDR_LN1");
+let pluckContactAddressStreet2 = makePluckerOne("US_Contact_ADDR_LN2");
+let pluckContactAddressCity = makePluckerOne("US_Contact_ADDR_City");
+let pluckContactAddressState = makePluckerOne("US_Contact_ADDR_State");
+let pluckContactAddressPostalCode =
+  makePluckerOne("US_Contact_ADDR_Postal_CD");
+let pluckContactAddressCountry = makePluckerOne("US_Contact_ADDR_Country");
+
+let pluckContactPhoneNum = makePluckerOne("US_Contact_HOME_TEL");
+let pluckContactEmail = makePluckerOne("US_Contact_EMAIL_ADDR");

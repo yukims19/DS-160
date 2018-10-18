@@ -149,6 +149,16 @@ let constructPageData = sheetData =>
         "Got P6Data: %s",
         TravelCompanion.stringOfTravelCompanionPageData(p6Data),
       );
+      let p7Data = PreviousUSTravel.previousUSTravelPageData(sheetData);
+      OneLog.infof(
+        "Got P7Data: %s",
+        PreviousUSTravel.stringOfPreviousUSTravelPageData(p7Data),
+      );
+      let p8Data = UsContact.usContactPageData(sheetData);
+      OneLog.infof(
+        "Got P8Data: %s",
+        UsContact.stringOfUSContactPageData(p8Data),
+      );
       Deferred.return();
     }
   );
