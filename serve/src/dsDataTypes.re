@@ -222,8 +222,8 @@ type previousUSTravel = {
 /*-----------------Page8----------------*/
 type person = name;
 type contactPersonOrOrg =
-  | Person
-  | Org;
+  | Person(person)
+  | Org(org);
 type contactRelationship =
   | Relative
   | Spouse
@@ -654,4 +654,103 @@ let stringOfTravelCompanion = (companion: option(companion)) =>
     | PersonAndRelationship(personAndRelationship) =>
       "With person" ++ stringOfPersonAndRelationship(personAndRelationship)
     }
+  };
+
+let stringOfPreTravelInfo = optionListPreTravelInfo =>
+  switch (optionListPreTravelInfo) {
+  | None => "N/A"
+  | Some(listPreTravelInfo) =>
+    List.mapi(
+      (idx, preTravelInfo) =>
+        Printf.sprintf(
+          "
+           %s:
+           Arrival Date: %s,
+           Stay Length: %s",
+          string_of_int(idx),
+          stringOfDate(preTravelInfo.arrivalDate),
+          stringOfTimeLength(preTravelInfo.timeLength),
+        ),
+      listPreTravelInfo,
+    )
+    |> List.fold_left((a, b) => a ++ "/" ++ b, "")
+  };
+
+let stringOfDriverLicense = optionListDriverLicenseInfo =>
+  switch (optionListDriverLicenseInfo) {
+  | None => "N/A"
+  | Some(listDriverLicenseInfo) =>
+    List.mapi(
+      (idx, driverLicenseInfo) =>
+        Printf.sprintf(
+          "
+         %s:
+         License Number: %s,
+         State: %s",
+          string_of_int(idx),
+          switch (driverLicenseInfo.licenseNum) {
+          | None => "N/A"
+          | Some(num) => num
+          },
+          driverLicenseInfo.state,
+        ),
+      listDriverLicenseInfo,
+    )
+    |> List.fold_left((a, b) => a ++ "/" ++ b, "")
+  };
+
+let stringOfLostVisaInfo = lostVisaInfo =>
+  Printf.sprintf(
+    "Lost Year: %s,
+     Explain: %s",
+    lostVisaInfo.year,
+    lostVisaInfo.explain,
+  );
+let stringOfPreVisa = optionVisaInfo =>
+  switch (optionVisaInfo) {
+  | None => "N/A"
+  | Some(visaInfo) =>
+    Printf.sprintf(
+      "Issue Date: %s,
+       Visa Number: %s,
+       Is Same Visa Type: %s,
+       Is Same Visa Location: %s,
+       Has Ten Print: %s,
+       Lost Explain: %s,
+       Canceled Explain: %s
+       ",
+      stringOfDate(visaInfo.issueDate),
+      switch (visaInfo.visaNum) {
+      | None => "N/A"
+      | Some(num) => num
+      },
+      string_of_bool(visaInfo.sameVisa),
+      string_of_bool(visaInfo.sameLocation),
+      string_of_bool(visaInfo.tenPrint),
+      switch (visaInfo.lost) {
+      | None => "N/A"
+      | Some(lostVisaInfo) => stringOfLostVisaInfo(lostVisaInfo)
+      },
+      switch (visaInfo.cancel) {
+      | None => "N/A"
+      | Some(exple) => exple
+      },
+    )
+  };
+
+let stringOfContactPersonOrOrg = contactPersonOrOrg =>
+  switch (contactPersonOrOrg) {
+  | Org(org) => org
+  | Person(person) => person.surname ++ ", " ++ person.givenName
+  };
+
+let stringOfContactRelationship = contactRelationship =>
+  switch (contactRelationship) {
+  | Relative => "Relative"
+  | Spouse => "Spouse"
+  | Friend => "Friend"
+  | Bussiness => "Bussiness"
+  | Employer => "Employer"
+  | School => "School"
+  | Other => "Other"
   };

@@ -2,28 +2,20 @@ open WorkerCommon;
 open DsDataTypes;
 open CountryType;
 
-/*
- let stringOfPassportPageData = (p4Data: DsDataTypes.passport) =>
-   Printf.sprintf(
-     "
-  Passport Type: %s,
-  Passport Number: %s,
-  Passport Book Number: %s,
-  countryIssue: %s,
-  placeIssue: %s,
-  isscueDate: %s,
-  expirationDate :%s,
-  lostPass: %s",
-     stringOfPassportType(p4Data.passType),
-     p4Data.passNum,
-     stringOfOptionString("Passport Book Num", p4Data.passBookNum),
-     p4Data.countryIssue,
-     stringOfShortAddress(p4Data.placeIssue),
-     stringOfDate(p4Data.issueDate),
-     stringOfOptionDate(p4Data.expirationDate),
-     stringOfLostPassport(p4Data.lostPass),
-   );
-  */
+let stringOfPreviousUSTravelPageData = (p7Data: DsDataTypes.previousUSTravel) =>
+  Printf.sprintf(
+    "
+     Last Travels: %s,
+     Driver License :%s,
+     Previous Visa: %s,
+     Refused :%s,
+     Petition :%s,",
+    stringOfPreTravelInfo(p7Data.lastTravels),
+    stringOfDriverLicense(p7Data.hasDriverLicense),
+    stringOfPreVisa(p7Data.preVisa),
+    stringOfOptionString("Refused", p7Data.refused),
+    stringOfOptionString("petition", p7Data.petition),
+  );
 
 let previousUSTravelPageData =
     (worksheetValues: worksheetValues)
