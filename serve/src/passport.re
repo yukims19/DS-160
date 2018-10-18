@@ -47,9 +47,9 @@ let passportPageData = (worksheetValues: worksheetValues) : passport => {
     ),
   expirationDate:
     pluckOptionDate(
-      Some(pluckPassportExprieDay(worksheetValues)),
-      Some(pluckPassportExprieMonth(worksheetValues)),
-      Some(pluckPassportExprieYear(worksheetValues)),
+      pluckPassportExprieDay(worksheetValues),
+      pluckPassportExprieMonth(worksheetValues),
+      pluckPassportExprieYear(worksheetValues),
     ),
   lostPass:
     optionListOfLostPassInfo(
