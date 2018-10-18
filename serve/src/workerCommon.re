@@ -739,3 +739,61 @@ let pluckOptionListDriverLicenseInfo = (licenseNumbers, licenseStates) =>
       ),
     )
   };
+
+let pluckOptionStringToBool = value =>
+  switch (value) {
+  | Some(value) => bool_of_string(value)
+  | None => raise(Failure(Printf.sprintf("Bool Cannot be empty")))
+  };
+
+let pluckPreviousVisaIssuedDay = makePluckerOne("PREV_VISA_ISSUED_Day");
+let pluckPreviousVisaIssuedMonth = makePluckerOne("PREV_VISA_ISSUED_Month");
+let pluckPreviousVisaIssuedYear = makePluckerOne("PREV_VISA_ISSUED_Year");
+
+let pluckPreviousVisaNum = makePluckerOne("PREV_VISA_Num");
+let pluckIsPreviousVisaSameType = makePluckerOne("PREV_VISA_Same_Type");
+let pluckIsPreviousVisaSameLocation = makePluckerOne("PREV_VISA_Same_Cntry");
+let pluckIsPreviousVisaTenPrint = makePluckerOne("PREV_VISA_TEN_print");
+let pluckPreviousVisaCancelExpl = makePluckerOne("PREV_VISA_Cancelled");
+
+let pluckPreviousVisaLostYear = makePluckerOne("PREV_VISA_LOST_Year");
+let pluckPreviousVisaLostExpl = makePluckerOne("PREV_VISA_LOST_Explain");
+let pluckLostVisaInfo = (year, expl) : option(DsDataTypes.lostVisaInfo) =>
+  switch (year, expl) {
+  | (None, None) => None
+  | (Some(year), Some(expl)) => Some({year, explain: expl})
+  | _ => raise(Failure("Year and Explain must both be present or empty"))
+  };
+
+let pluckPreviouVisa =
+    (
+      day,
+      month,
+      year,
+      visaNum,
+      isSameType,
+      isSameLocation,
+      isTenPrint,
+      lostYear,
+      lostExpl,
+      visaCancelExpl,
+    )
+    : option(DsDataTypes.visaInfo) =>
+  switch (day, month, year) {
+  | (Some(day), Some(month), Some(year)) =>
+    Some({
+      issueDate: pluckDate(Some(day), Some(month), Some(year)),
+      visaNum,
+      sameVisa: pluckOptionStringToBool(isSameType),
+      sameLocation: pluckOptionStringToBool(isSameLocation),
+      tenPrint: pluckOptionStringToBool(isTenPrint),
+      lost: pluckLostVisaInfo(lostYear, lostExpl),
+      cancel: visaCancelExpl,
+    })
+  | (None, None, None) => None
+  | _ =>
+    raise(Failure("Day, Month, Year must be present for previous visa info"))
+  };
+
+let pluckRefusedExpl = makePluckerOne("PREV_Visa_Refused_Expl");
+let pluckPetitionExpl = makePluckerOne("PREV_Visa_Petition_Expl");
