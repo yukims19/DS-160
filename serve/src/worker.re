@@ -13,7 +13,7 @@ let getSheetDataQuery = sheetId =>
   ++ "\\\"\\n      ) {\\n        namedRanges {\\n          name\\n          namedRangeId\\n        }\\n        spreadsheetId\\n        spreadsheetUrl\\n        properties {\\n          title\\n          autoRecalc\\n        }\\n        sheets {\\n          data {\\n            rowData {\\n              values {\\n                formattedValue\\n              }\\n            }\\n            startRow\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\\n\",\"variables\":null}";
 
 let oneGraphQueryHeaderList = [
-  ("Authentication", "Bearer tQhJQyN55Q3guJou50YSyeY3B8Rn_dXHbs7zglGl8nU"),
+  ("Authentication", "Bearer EllXOnjB6_gB3Aq9MQ55c1u4Ymz4AFyHfx9jEBuhzsQ"),
   ("Accept", "application/json"),
 ];
 
@@ -141,7 +141,14 @@ let constructPageData = sheetData =>
         "Got P4Data: %s",
         Passport.stringOfPassportPageData(p4Data),
       );
-
+      /*TODO: Fix type for p5*/
+      let p5Data = Travel.travelPageData(sheetData);
+      OneLog.infof("Got P5Data: %s", Travel.stringOfTravelPageData(p5Data));
+      let p6Data = TravelCompanion.travelCompanionPageData(sheetData);
+      OneLog.infof(
+        "Got P6Data: %s",
+        TravelCompanion.stringOfTravelCompanionPageData(p6Data),
+      );
       Deferred.return();
     }
   );

@@ -54,6 +54,12 @@ let nonOptionString = (key, value) =>
   | None => raise(Failure(Printf.sprintf("%s cannot be empty", key)))
   };
 
+let nonOptionList = (key, listValue) =>
+  switch (listValue) {
+  | Some(realList) => realList
+  | None => raise(Failure(Printf.sprintf("%s cannot be empty", key)))
+  };
+
 let pluckGivenName = makePluckerOne("GIVEN_NAME");
 let pluckSurname = makePluckerOne("SURNAME");
 let pluckGenderRaw = makePluckerOne("GENDER");
@@ -432,6 +438,304 @@ let optionListOfLostPassInfo =
     raise(
       Failure(
         "OTHER_NATIONALITY and OTHER_PASSPORT_NUM must either both be absent or both be present. Please enter N/A for unknow passport number",
+      ),
+    )
+  };
+
+let pluckPurposeOfTripRow = makePluckerMulti("PURPOSE_OF_TRIP");
+let pluckPurposeOfTrip = worksheetValues : option(list(DsDataTypes.purpose)) =>
+  switch (pluckPurposeOfTripRow(worksheetValues)) {
+  | Some(purposeOfTrip) =>
+    Some(
+      List.map(
+        purposeOfTrip =>
+          switch (purposeOfTrip) {
+          | "A" => (A: DsDataTypes.purpose)
+          | "B" => B
+          | "C" => C
+          | "D" => D
+          | "E" => E
+          | "F" => F
+          | "G" => G
+          | _value =>
+            raise(
+              Failure(
+                "Invalide type for Person_Paying: "
+                ++ _value
+                ++ ". Please enter Self, OtherPerson, Employee, USEmployee or OtherOrg.",
+              ),
+            )
+          },
+        purposeOfTrip,
+      ),
+    )
+  | None => raise(Failure("PERSON_PAYING cannot be empty"))
+  };
+
+let pluckSpecificPurpose = makePluckerMulti("SPECIFIC_PURPOSE");
+
+let listPurposeInfo = (purpose, specificPurpose) =>
+  switch (purpose, specificPurpose) {
+  | (Some(purpose), Some(specificPurpose)) =>
+    Some(
+      List.map2(
+        (purpose, specificPurpose) => (
+          {purpose, specify: specificPurpose}: DsDataTypes.purposeInfo
+        ),
+        purpose,
+        specificPurpose,
+      ),
+    )
+  | _ =>
+    raise(
+      Failure("PURPOSE_OF_TRIP and SPECIFIC_PURPOSE must both be present"),
+    )
+  };
+
+let pluckHasTravelPlan = makePluckerOne("HAS_TRAVEL_PLAN");
+
+let pluckTravelArrivalDay = makePluckerOne("TRAVEL_ARRIVAL_DAY");
+let pluckTravelArrivalMonth = makePluckerOne("TRAVEL_ARRIVAL_MONTH");
+let pluckTravelArrivalYear = makePluckerOne("TRAVEL_ARRIVAL_YEAR");
+
+let pluckTravelStayLenthNumber = makePluckerOne("TRAVEL_LENGTH_NUMBER");
+let pluckTravelStayLenthUnitRaw = makePluckerOne("TRAVEL_LENGTH_UNIT");
+let pluckTravelStayLenthUnit = worksheetValues : DsDataTypes.timeUnit =>
+  switch (pluckTravelStayLenthUnitRaw(worksheetValues)) {
+  | Some(timeUnit) =>
+    switch (timeUnit) {
+    | "Y" => Y
+    | "M" => M
+    | "W" => W
+    | "D" => D
+    | _value =>
+      raise(
+        Failure(
+          "Invalide type for Time Unit: "
+          ++ _value
+          ++ ". Please enter Y, M, W, or D.",
+        ),
+      )
+    }
+  | None => raise(Failure("Time Unit cannot be empty"))
+  };
+
+let pluckTimeLength = (number, timeUnit) : DsDataTypes.timeLength => {
+  number,
+  timeUnit,
+};
+
+let pluckTravelStayStreet1 = makePluckerOne("TRAVEL_STAY_ADDR_LN1");
+let pluckTravelStayStreet2 = makePluckerOne("TRAVEL_STAY_ADDR_LN2");
+let pluckTravelStayCity = makePluckerOne("TRAVEL_STAY_ADDR_CITY");
+let pluckTravelStayState = makePluckerOne("TRAVEL_STAY_ADDR_STATE");
+let pluckTravelStayZipCode = makePluckerOne("TRAVEL_STAY_ADDR_POSTAL_CD");
+let pluckTravelStayCountry = makePluckerOne("TRAVEL_STAY_ADDR_COUNTRY");
+
+let pluckPersonPayingRaw = makePluckerOne("PERSON_PAYING");
+let pluckPersonPaying = worksheetValues : DsDataTypes.personPaying =>
+  switch (pluckPersonPayingRaw(worksheetValues)) {
+  | Some(personPaying) =>
+    switch (personPaying) {
+    | "Self" => Self
+    | "OtherPerson" => OtherPerson
+    | "Employee" => Employee
+    | "USEmployee" => USEmployee
+    | "OtherOrg" => OtherOrg
+    | _value =>
+      raise(
+        Failure(
+          "Invalide type for Person_Paying: "
+          ++ _value
+          ++ ". Please enter Self, OtherPerson, Employee, USEmployee or OtherOrg.",
+        ),
+      )
+    }
+  | None => raise(Failure("PERSON_PAYING cannot be empty"))
+  };
+
+let pluckTravelCompanionGroupName =
+  makePluckerOne("Travel_Companion_Group_Name");
+let pluckTravelCompanionSurname = makePluckerOne("Travel_Companion_Surname");
+let pluckTravelCompanionGiveName =
+  makePluckerOne("Travel_Companion_Given_Name");
+let pluckTravelCompanionRelationshipRaw =
+  makePluckerOne("Travel_Companion_Relationship");
+let pluckTravelCompanionRelationship =
+    relationshipRaw
+    : DsDataTypes.relationship =>
+  switch (relationshipRaw) {
+  | None =>
+    raise(Failure("If Group_Name is null, PERSON_PAYING cannot be empty"))
+  | Some(input) =>
+    switch (input) {
+    | "Parent" => Parent
+    | "Spouse" => Spouse
+    | "Child" => Child
+    | "Relative" => Relative
+    | "Friend" => Friend
+    | "Bussiness" => Bussiness
+    | "Other" => Other
+    | _ =>
+      raise(
+        Failure(
+          "Invalid value for month. Please enter  Parent,
+            Spouse
+            Child
+            Relative
+            Friend
+            Bussiness or
+            Other",
+        ),
+      )
+    }
+  };
+let pluckCompanion =
+    (groupName, surname, givenName, relationshipRaw)
+    : option(DsDataTypes.companion) =>
+  switch (groupName, surname, givenName, relationshipRaw) {
+  | (None, None, None, None) => None
+  | (Some(groupName), _, _, _) => Some(Org(groupName))
+  | (None, Some(surname), Some(givenName), Some(relationshipRaw)) =>
+    Some(
+      PersonAndRelationship({
+        name: fullName(Some(surname), Some(givenName)),
+        relationship:
+          pluckTravelCompanionRelationship(Some(relationshipRaw)),
+      }),
+    )
+  | _ =>
+    raise(
+      Failure(
+        "If has travel companions, please enter either Group_Name, or Surname,Given_Name, Relationship. If no comapnions, please keep all the fields empty",
+      ),
+    )
+  };
+
+let pluckPreviousVisitDay = makePluckerMulti("Prev_US_Visite_Day");
+let pluckPreviousVisitMonth = makePluckerMulti("Prev_US_Visite_Month");
+let pluckPreviousVisitYear = makePluckerMulti("Prev_US_Visite_Year");
+
+let pluckListDate = (days, months, years) =>
+  switch (days, months, years) {
+  | (Some(days), Some(months), Some(years)) =>
+    List.length(days) === List.length(months)
+    && List.length(months) === List.length(years) ?
+      List.mapi(
+        (idx, day) =>
+          pluckDate(
+            Some(day),
+            Some(List.nth(months, idx)),
+            Some(List.nth(years, idx)),
+          ),
+        days,
+      ) :
+      raise(Failure("Day, month, years need to be in the same length"))
+  | (None, None, None) => []
+  | _ => raise(Failure("Day, month, years need to be in the same length"))
+  };
+
+let pluckPreviousVisiteStayTimeNumber =
+  makePluckerMulti("Prev_US_Visite_Stay_Time_Number");
+let pluckPreviousVisiteStayTimeUnitRaw =
+  makePluckerMulti("Prev_US_Visite_Stay_Time_Unit");
+
+let pluckListTimeUnit = listTimeUnitRaw =>
+  List.map(
+    timeUnit => (
+      switch (timeUnit) {
+      | "Y" => Y
+      | "M" => M
+      | "W" => W
+      | "D" => D
+      | _value =>
+        raise(
+          Failure(
+            "Invalide type for Time Unit: "
+            ++ _value
+            ++ ". Please enter Y, M, W, or D.",
+          ),
+        )
+      }: DsDataTypes.timeUnit
+    ),
+    listTimeUnitRaw,
+  );
+
+let pluckListTimeLength =
+    (numbers, timeUnitsRaw)
+    : list(DsDataTypes.timeLength) =>
+  List.map2(
+    (number, timeUnit) => (
+      {number: int_of_string(number), timeUnit}: DsDataTypes.timeLength
+    ),
+    numbers,
+    pluckListTimeUnit(timeUnitsRaw),
+  );
+
+let pluckOptionListPreTravelInfo =
+    (days, months, years, timeNumbers, timeUnitsRaw) =>
+  switch (days, months, years, timeNumbers, timeUnitsRaw) {
+  | (None, None, None, None, None) => None
+  | (
+      Some(days),
+      Some(months),
+      Some(years),
+      Some(timeNumbers),
+      Some(timeUnitsRaw),
+    ) =>
+    let listArrivalDate =
+      pluckListDate(Some(days), Some(months), Some(years));
+    let listTimeLength = pluckListTimeLength(timeNumbers, timeUnitsRaw);
+    List.length(listArrivalDate) === List.length(listTimeLength) ?
+      Some(
+        List.map2(
+          (arrivalDate, timeLength) => (
+            {arrivalDate, timeLength}: DsDataTypes.preTravelInfo
+          ),
+          listArrivalDate,
+          listTimeLength,
+        ),
+      ) :
+      raise(
+        Failure("arrivalDate and driverLicenseInfo must have same length"),
+      );
+  | _ =>
+    raise(
+      Failure(
+        "Fields in arrivalDate and driverLicenseInfo must have same length",
+      ),
+    )
+  };
+
+let pluckDriverLicenseNumber = makePluckerMulti("US_Driver_license_Num");
+let pluckDriverLicenseNumber = makePluckerMulti("US_Driver_license_State");
+
+let pluckOptionListDriverLicenseInfo = (licenseNumbers, licenseStates) =>
+  switch (licenseNumbers, licenseStates) {
+  | (None, None) => None
+  | (Some(licenseNumbers), Some(licenseStates)) =>
+    List.length(licenseNumbers) === List.length(licenseStates) ?
+      Some(
+        List.map2(
+          (licenseNum, state) => (
+            {
+              licenseNum: licenseNum == "N/A" ? None : Some(licenseNum),
+              state,
+            }: DsDataTypes.driverLicenseInfo
+          ),
+          licenseNumbers,
+          licenseStates,
+        ),
+      ) :
+      raise(
+        Failure(
+          "License Number and License State must have same length. If License Number is unknown, please enter N/A",
+        ),
+      )
+  | _ =>
+    raise(
+      Failure(
+        "License Number and License State must have same length. If License Number is unknown, please enter N/A",
       ),
     )
   };
