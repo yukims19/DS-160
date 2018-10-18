@@ -120,7 +120,7 @@ type purpose =
   | F
   | G;
 
-type hasTravlePlan = {
+type hasTravelPlan = {
   arrivalDate: date,
   arrivalFlight: option(string),
   arrivalCity: string,
@@ -142,15 +142,15 @@ type timeLength = {
   timeUnit,
 };
 
-type noTravlePlan = {
+type noTravelPlan = {
   arrivalDate: date,
   stayLength: timeLength,
   stayAddress: address,
 };
 
 type travelPlan =
-  | HasTravlePlan
-  | NoTravlePlan;
+  | HasTravelPlan(hasTravelPlan)
+  | NoTravelPlan(noTravelPlan);
 
 type purposeInfo = {
   purpose,
@@ -184,8 +184,8 @@ type personAndRelationship = {
   relationship,
 };
 type companion =
-  | Org
-  | PersonAndRelationship;
+  | Org(org)
+  | PersonAndRelationship(personAndRelationship);
 /*********/
 type travelCompanions = {companion: option(companion)};
 
@@ -568,4 +568,90 @@ let stringOfLostPassport = (lostPass: option(list(lostPassInfo))) =>
       ),
     )
   | None => "No Other Nationality"
+  };
+
+let stringOfPersonPaying = personPayingType =>
+  switch (personPayingType) {
+  | Self => "Self"
+  | OtherPerson => "OtherPerson"
+  | Employee => "Employee"
+  | USEmployee => "USEmployee"
+  | OtherOrg => "OtherOrg"
+  };
+
+let stringOfTimeUnit = timeUnit =>
+  switch (timeUnit) {
+  | Y => "Y"
+  | M => "M"
+  | W => "W"
+  | D => "D"
+  };
+let stringOfTimeLength = timeLength =>
+  string_of_int(timeLength.number) ++ stringOfTimeUnit(timeLength.timeUnit);
+
+let stringOfTravelPlan = travelPlan =>
+  switch (travelPlan) {
+  | NoTravelPlan(noTravelPlan) =>
+    Printf.sprintf(
+      "
+       Arrival Date: %s,
+       Stay Length: %s,
+       Stay Address: %s",
+      stringOfDate(noTravelPlan.arrivalDate),
+      stringOfTimeLength(noTravelPlan.stayLength),
+      stringOfAddress(noTravelPlan.stayAddress),
+    )
+  | HasTravelPlan(hasTravelPlan) => ""
+  };
+
+let stringOfPurpose = purpose =>
+  switch (purpose) {
+  | A => "A"
+  | B => "B"
+  | C => "C"
+  | D => "D"
+  | E => "E"
+  | F => "F"
+  | G => "G"
+  };
+let stringOfPurposeToUS = purposeInfo => {
+  let purposeList =
+    List.map(
+      purposeInfo =>
+        stringOfPurpose(purposeInfo.purpose) ++ "-" ++ purposeInfo.specify,
+      purposeInfo,
+    );
+  List.fold_left((a, b) => a ++ "/" ++ b, "", purposeList);
+};
+
+let stringOfRelationship = relationship =>
+  switch (relationship) {
+  | Parent => "Parent"
+  | Spouse => "Spouse"
+  | Child => "Child"
+  | Relative => "Relative"
+  | Friend => "Friend"
+  | Bussiness => "Bussiness"
+  | Other => "Other"
+  };
+
+let stringOfPersonAndRelationship =
+    (personAndRelationship: personAndRelationship) =>
+  Printf.sprintf(
+    "
+     Name: %s,
+     Relationship: %s",
+    personAndRelationship.name.surname ++ personAndRelationship.name.givenName,
+    stringOfRelationship(personAndRelationship.relationship),
+  );
+
+let stringOfTravelCompanion = (companion: option(companion)) =>
+  switch (companion) {
+  | None => "N/A"
+  | Some(companion) =>
+    switch (companion) {
+    | Org(org) => "With organization: " ++ org
+    | PersonAndRelationship(personAndRelationship) =>
+      "With person" ++ stringOfPersonAndRelationship(personAndRelationship)
+    }
   };
