@@ -173,7 +173,25 @@ let pluckOptionDate = (day, month, year) =>
       Failure("Date, Month, Year should all have some value or all be empty"),
     )
   };
-
+let pluckListDate = (day, month, year) =>
+  List.length(day) == List.length(month)
+  && List.length(month) == List.length(year) ?
+    List.mapi(
+      (idx, day) =>
+        pluckDate(
+          Some(day),
+          Some(List.nth(month, idx)),
+          Some(List.nth(year, idx)),
+        ),
+      day,
+    ) :
+    raise(
+      Failure(
+        "The Following Fields must be in same length:
+         day, month,year.
+         Please enter N/A for unknown fields",
+      ),
+    );
 let pluckP1POBCity = makePluckerOne("PLACE_OF_BIRTH_CITY");
 let pluckP1POBState = makePluckerOne("PLACE_OF_BIRTH_STATE_PROVINCE");
 let pluckP1POBCountry = makePluckerOne("PLACE_OF_BIRTH_CNTRY");
@@ -305,6 +323,57 @@ let address =
   state,
   zipCode,
   country: nation(country),
+};
+
+let listAddress =
+    (streetL1s: list(string), streetL2s, citys, states, zipCodes, countrys)
+    : list(DsDataTypes.address) => {
+  let listLength = List.length(streetL1s);
+  if (listLength == List.length(streetL1s)
+      && listLength == List.length(streetL2s)
+      && listLength == List.length(citys)
+      && listLength == List.length(states)
+      && listLength == List.length(zipCodes)
+      && listLength == List.length(countrys)) {
+    List.mapi(
+      (idx, streetL1) =>
+        address(
+          switch (streetL1) {
+          | "N/A" => raise(Failure("StreetL1 cannot be N/A"))
+          | _street => Some(_street)
+          },
+          switch (List.nth(streetL2s, idx)) {
+          | "N/A" => None
+          | _street => Some(_street)
+          },
+          switch (List.nth(citys, idx)) {
+          | "N/A" => raise(Failure("City cannot be N/A"))
+          | _street => Some(_street)
+          },
+          switch (List.nth(states, idx)) {
+          | "N/A" => None
+          | _state => Some(_state)
+          },
+          switch (List.nth(zipCodes, idx)) {
+          | "N/A" => None
+          | _code => Some(_code)
+          },
+          switch (List.nth(countrys, idx)) {
+          | "N/A" => raise(Failure("Country cannot be N/A"))
+          | _street => Some(_street)
+          },
+        ),
+      streetL1s,
+    );
+  } else {
+    raise(
+      Failure(
+        "The Following Fields must be in same length:
+         streetL1, streetL2, city, state, zipCode, country.
+        Please enter N/A for unknown fields",
+      ),
+    );
+  };
 };
 
 let pluckMailingStreet1 = makePluckerOne("MAILING_ADDR_LN1");
@@ -603,25 +672,6 @@ let pluckPreviousVisitDay = makePluckerMulti("Prev_US_Visit_Day");
 let pluckPreviousVisitMonth = makePluckerMulti("Prev_US_Visit_Month");
 let pluckPreviousVisitYear = makePluckerMulti("Prev_US_Visit_Year");
 
-let pluckListDate = (days, months, years) =>
-  switch (days, months, years) {
-  | (Some(days), Some(months), Some(years)) =>
-    List.length(days) === List.length(months)
-    && List.length(months) === List.length(years) ?
-      List.mapi(
-        (idx, day) =>
-          pluckDate(
-            Some(day),
-            Some(List.nth(months, idx)),
-            Some(List.nth(years, idx)),
-          ),
-        days,
-      ) :
-      raise(Failure("Day, month, years need to be in the same length"))
-  | (None, None, None) => []
-  | _ => raise(Failure("Day, month, years need to be in the same length"))
-  };
-
 let pluckPreviousVisiteStayTimeNumber =
   makePluckerMulti("Prev_US_Visit_Stay_Time_Number");
 let pluckPreviousVisiteStayTimeUnitRaw =
@@ -670,8 +720,7 @@ let pluckOptionListPreTravelInfo =
       Some(timeNumbers),
       Some(timeUnitsRaw),
     ) =>
-    let listArrivalDate =
-      pluckListDate(Some(days), Some(months), Some(years));
+    let listArrivalDate = pluckListDate(days, months, years);
     let listTimeLength = pluckListTimeLength(timeNumbers, timeUnitsRaw);
     List.length(listArrivalDate) === List.length(listTimeLength) ?
       Some(
@@ -950,7 +999,8 @@ let pluckOptionListRelativeMember =
     )
   };
 
-let pluckPresentOccupation = makePluckerOne("Present_Occupation");
+let pluckPresentOccupationRaw = makePluckerOne("Present_Occupation");
+let pluckPresentOccupationExplain = makePluckerOne("Present_Occupation_Expl");
 
 let pluckPresentEmployerName = makePluckerOne("Present_Employer_Name");
 let pluckPresentEmployerAddress1 = makePluckerOne("Present_Employer_ADDR1");
@@ -977,6 +1027,8 @@ let pluckPresentEmployerDuty = makePluckerOne("Present_Employer_Duty");
 
 let pluckPresentEmployerInfo =
     (
+      occupationType,
+      explain,
       employerName,
       streetL1,
       streetL2,
@@ -991,15 +1043,386 @@ let pluckPresentEmployerInfo =
       income,
       duty,
     )
-    : DsDataTypes.presentEmployer => {
-  employerName: nonOptionString("Employer Name", employerName),
-  employerAddress: address(streetL1, streetL2, city, state, zipCode, country),
-  phoneNum: nonOptionString("Employer Name", phoneNum),
-  startDate: pluckDate(day, month, year),
-  monthlyIncome:
-    switch (income) {
-    | Some(income) => Some(int_of_string(income))
-    | None => None
-    },
-  duty: nonOptionString("Duty", duty),
+    : DsDataTypes.presentEmployerInfo => {
+  let presentEmployer: DsDataTypes.presentEmployer = {
+    employerName: nonOptionString("Employer Name", employerName),
+    employerAddress:
+      address(streetL1, streetL2, city, state, zipCode, country),
+    phoneNum: nonOptionString("Employer Name", phoneNum),
+    startDate: pluckDate(day, month, year),
+    monthlyIncome:
+      switch (income) {
+      | Some(income) => Some(int_of_string(income))
+      | None => None
+      },
+    duty: nonOptionString("Duty", duty),
+  };
+  switch ((occupationType: OccupationType.occupation)) {
+  | OTHER =>
+    ExplainAndEmployer({
+      explain:
+        switch (explain) {
+        | Some(expl) => expl
+        | None =>
+          raise(Failure("Please explain if your occupation is OTHER"))
+        },
+      presentEmployer,
+    })
+  | NOT_EMPLOYED =>
+    Explain(
+      switch (explain) {
+      | Some(expl) => expl
+      | None => raise(Failure("Please explain if you are not employed"))
+      },
+    )
+  | _ => Employer(presentEmployer)
+  };
 };
+
+let pluckPreviousEmployerName = makePluckerMulti("Previous_Employer_Name");
+
+let pluckPreviousEmployerAddress1 =
+  makePluckerMulti("Previous_Employer_ADDR1");
+let pluckPreviousEmployerAddress2 =
+  makePluckerMulti("Previous_Employer_ADDR2");
+let pluckPreviousEmployerAddressCity =
+  makePluckerMulti("Previous_Employer_ADDR_City");
+let pluckPreviousEmployerAddressState =
+  makePluckerMulti("Previous_Employer_ADDR_State");
+let pluckPreviousEmployerAddressPostalCode =
+  makePluckerMulti("Previous_Employer_ADDR_Postal_CD");
+let pluckPreviousEmployerAddressCountry =
+  makePluckerMulti("Previous_Employer_ADDR_Country");
+
+let pluckPreviousEmployerPhoneNum = makePluckerMulti("Previous_Employer_TEL");
+let pluckPreviousEmployerJob_Title =
+  makePluckerMulti("Previous_Employer_Job_Title");
+let pluckPreviousEmployerSupervisorSurname =
+  makePluckerMulti("Previous_Employer_Supervisor_Surname");
+let pluckPreviousEmployerSupervisorGiveName =
+  makePluckerMulti("Previous_Employer_Supervisor_Given_Name");
+
+let pluckPreviousEmployerStartDay =
+  makePluckerMulti("Previous_Employer_Start_Day");
+let pluckPreviousEmployerStartMonth =
+  makePluckerMulti("Previous_Employer_Start_Month");
+let pluckPreviousEmployerStartYear =
+  makePluckerMulti("Previous_Employer_Start_Year");
+let pluckPreviousEmployerEndDay =
+  makePluckerMulti("Previous_Employer_End_Day");
+let pluckPreviousEmployerEndMonth =
+  makePluckerMulti("Previous_Employer_End_Month");
+let pluckPreviousEmployerEndYear =
+  makePluckerMulti("Previous_Employer_End_Year");
+let pluckPreviousEmployerDuty = makePluckerMulti("Previous_Employer_Duty");
+
+let pluckPreviousEmployer =
+    (
+      employerName,
+      streetL1,
+      streetL2,
+      city,
+      state,
+      zipCode,
+      country,
+      phoneNum,
+      jobTitle,
+      supervisorSurname,
+      supervisorGivenName,
+      startDay,
+      startMonth,
+      startYear,
+      endDay,
+      endMonth,
+      endYear,
+      duty,
+    ) =>
+  switch (
+    employerName,
+    streetL1,
+    streetL2,
+    city,
+    state,
+    zipCode,
+    country,
+    phoneNum,
+    jobTitle,
+    supervisorSurname,
+    supervisorGivenName,
+    startDay,
+    startMonth,
+    startYear,
+    endDay,
+    endMonth,
+    endYear,
+    duty,
+  ) {
+  | (
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+    ) =>
+    None
+  | (
+      Some(employerName),
+      Some(streetL1),
+      Some(streetL2),
+      Some(city),
+      Some(state),
+      Some(zipCode),
+      Some(country),
+      Some(phoneNum),
+      Some(jobTitle),
+      Some(supervisorSurname),
+      Some(supervisorGivenName),
+      Some(startDay),
+      Some(startMonth),
+      Some(startYear),
+      Some(endDay),
+      Some(endMonth),
+      Some(endYear),
+      Some(duty),
+    ) =>
+    let employerAddress: list(DsDataTypes.address) =
+      listAddress(streetL1, streetL2, city, state, zipCode, country);
+    let startDate = pluckListDate(startDay, startMonth, startYear);
+    let endDate = pluckListDate(endDay, endMonth, endYear);
+    let listLength = List.length(employerName);
+    if (listLength == List.length(employerName)
+        && listLength == List.length(employerAddress)
+        && listLength == List.length(phoneNum)
+        && listLength == List.length(jobTitle)
+        && listLength == List.length(supervisorSurname)
+        && listLength == List.length(supervisorGivenName)
+        && listLength == List.length(startDate)
+        && listLength == List.length(endDate)
+        && listLength == List.length(duty)) {
+      Some(
+        List.mapi(
+          (idx, employerName) => (
+            {
+              employerName,
+              employerAddress: List.nth(employerAddress, idx),
+              phoneNum: List.nth(phoneNum, idx),
+              jobTitle: List.nth(jobTitle, idx),
+              supervisorSurname:
+                switch (List.nth(supervisorSurname, idx)) {
+                | "N/A" => None
+                | _name => Some(_name)
+                },
+              supervisorGivenName:
+                switch (List.nth(supervisorGivenName, idx)) {
+                | "N/A" => None
+                | _name => Some(_name)
+                },
+              startDate: List.nth(startDate, idx),
+              endDate: List.nth(endDate, idx),
+              duty: List.nth(duty, idx),
+            }: DsDataTypes.previousEmployer
+          ),
+          employerName,
+        ),
+      );
+    } else {
+      raise(
+        Failure(
+          "The Following Fields must be in same length:
+       employerName,
+       employerAddress,
+       phoneNum,
+       jobTitle,
+       supervisorSurname,
+       supervisorGivenName,
+       startDate,
+       endDate,
+       duty. Please enter N/A for unknown fields",
+        ),
+      );
+    };
+  | _ =>
+    raise(
+      Failure(
+        "The Following Fields must be in same length:
+       employerName,
+       employerAddress,
+       phoneNum,
+       jobTitle,
+       supervisorSurname,
+       supervisorGivenName,
+       startDate,
+       endDate,
+       duty. Please enter N/A for unknown fields",
+      ),
+    )
+  };
+
+let pluckPreviousSchoolName = makePluckerMulti("Previous_School_Name");
+
+let pluckPreviousSchoolAddress1 = makePluckerMulti("Previous_School_ADDR1");
+let pluckPreviousSchoolAddress2 = makePluckerMulti("Previous_School_ADDR2");
+let pluckPreviousSchoolAddressCity =
+  makePluckerMulti("Previous_School_ADDR_City");
+let pluckPreviousSchoolAddressState =
+  makePluckerMulti("Previous_School_ADDR_State");
+let pluckPreviousSchoolAddressPostalCode =
+  makePluckerMulti("Previous_School_ADDR_Postal_CD");
+let pluckPreviousSchoolAddressCountry =
+  makePluckerMulti("Previous_School_ADDR_Country");
+
+let pluckPreviousSchoolPhoneNum = makePluckerMulti("Previous_School_TEL");
+let pluckPreviousSchoolCourseOfStudy =
+  makePluckerMulti("Previous_School_Course_Of_Study");
+let pluckPreviousSchoolStartDay =
+  makePluckerMulti("Previous_School_Start_Day");
+let pluckPreviousSchoolStartMonth =
+  makePluckerMulti("Previous_School_Start_Month");
+let pluckPreviousSchoolStartYear =
+  makePluckerMulti("Previous_School_Start_Year");
+let pluckPreviousSchoolEndDay = makePluckerMulti("Previous_School_End_Day");
+let pluckPreviousSchoolEndMonth =
+  makePluckerMulti("Previous_School_End_Month");
+let pluckPreviousSchoolEndYear = makePluckerMulti("Previous_School_End_Year");
+
+let pluckPreviousEducation =
+    (
+      schoolName,
+      streetL1,
+      streetL2,
+      city,
+      state,
+      zipCode,
+      country,
+      phoneNum,
+      courseOfStudy,
+      startDay,
+      startMonth,
+      startYear,
+      endDay,
+      endMonth,
+      endYear,
+    ) =>
+  switch (
+    schoolName,
+    streetL1,
+    streetL2,
+    city,
+    state,
+    zipCode,
+    country,
+    phoneNum,
+    courseOfStudy,
+    startDay,
+    startMonth,
+    startYear,
+    endDay,
+    endMonth,
+    endYear,
+  ) {
+  | (
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+      None,
+    ) =>
+    None
+  | (
+      Some(schoolName),
+      Some(streetL1),
+      Some(streetL2),
+      Some(city),
+      Some(state),
+      Some(zipCode),
+      Some(country),
+      Some(phoneNum),
+      Some(courseOfStudy),
+      Some(startDay),
+      Some(startMonth),
+      Some(startYear),
+      Some(endDay),
+      Some(endMonth),
+      Some(endYear),
+    ) =>
+    let employerAddress: list(DsDataTypes.address) =
+      listAddress(streetL1, streetL2, city, state, zipCode, country);
+    let startDate = pluckListDate(startDay, startMonth, startYear);
+    let endDate = pluckListDate(endDay, endMonth, endYear);
+    let listLength = List.length(schoolName);
+    if (listLength == List.length(schoolName)
+        && listLength == List.length(employerAddress)
+        && listLength == List.length(phoneNum)
+        && listLength == List.length(courseOfStudy)
+        && listLength == List.length(startDate)
+        && listLength == List.length(endDate)) {
+      Some(
+        List.mapi(
+          (idx, institutionName) => (
+            {
+              institutionName,
+              employerAddress: List.nth(employerAddress, idx),
+              phoneNum: List.nth(phoneNum, idx),
+              courseOfStudy: List.nth(courseOfStudy, idx),
+              startDate: List.nth(startDate, idx),
+              endDate: List.nth(endDate, idx),
+            }: DsDataTypes.education
+          ),
+          schoolName,
+        ),
+      );
+    } else {
+      raise(
+        Failure(
+          "The Following Fields must be in same length:
+           employerName,
+           employerAddress,
+           phoneNum,
+           jobTitle,
+           supervisorSurname,
+           supervisorGivenName,
+           startDate,
+           endDate,
+           duty. Please enter N/A for unknown fields",
+        ),
+      );
+    };
+  | _ =>
+    raise(
+      Failure(
+        "The Following Fields must be in same length:
+         employerName,
+         employerAddress,
+         phoneNum,
+         jobTitle,
+         supervisorSurname,
+         supervisorGivenName,
+         startDate,
+         endDate,
+         duty. Please enter N/A for unknown fields",
+      ),
+    )
+  };

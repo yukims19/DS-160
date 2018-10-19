@@ -161,6 +161,18 @@ let constructPageData = sheetData =>
       );
       let p9Data = Family.familyPageData(sheetData);
       OneLog.infof("Got P9Data: %s", Family.stringOfFamilyPageData(p9Data));
+      let p10Data =
+        PresentWorkEducationTraining.presentWETPageData(sheetData);
+      OneLog.infof(
+        "Got P10Data: %s",
+        PresentWorkEducationTraining.stringOfPresentWETPageData(p10Data),
+      );
+      let p11Data =
+        PreviousWorkEducationTraining.previousWETPageData(sheetData);
+      OneLog.infof(
+        "Got P11Data: %s",
+        PreviousWorkEducationTraining.stringOfPreviousWETPageData(p11Data),
+      );
       Deferred.return();
     }
   );
