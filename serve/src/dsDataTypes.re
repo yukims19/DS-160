@@ -268,10 +268,6 @@ type family = {
   relative: option(list(relativeMember)),
 };
 /*-----------------Page10----------------*/
-type presentEmployerInfo =
-  | Explain
-  | Employer
-  | ExplainAndEmployer;
 type explain = string;
 type presentEmployer = {
   employerName: string,
@@ -285,8 +281,17 @@ type explainAndEmployer = {
   explain,
   presentEmployer,
 };
+type presentEmployerInfo =
+  | Explain(explain)
+  | Employer(presentEmployer)
+  | ExplainAndEmployer(explainAndEmployer);
+
 type presentWET = {
-  occupation: string,
+  occupation: OccupationType.occupation, /*TODO: Need to be variant
+     Other => explain and employer
+     No Employ => explain
+     _ => employer
+   */
   presentEmployerInfo,
 };
 /*-----------------Page11----------------*/
@@ -316,7 +321,7 @@ type previousWET = {
 };
 /*-----------------Page12----------------*/
 type military = {
-  country: string,
+  country,
   branch: string,
   rank: string,
   speciality: string,
@@ -326,7 +331,7 @@ type military = {
 type additionalWET = {
   tribe: option(string),
   lanuage: list(string),
-  travle: option(list(string)),
+  travle: option(list(country)),
   charity: option(list(string)),
   specialSkill: option(string),
   military: option(list(military)),
@@ -808,6 +813,104 @@ let stringOfRelativeMember =
           stringOfStayStatus(relativeMember.stayStatus),
         ),
       listRelativeMember,
+    )
+    |> List.fold_left((a, b) => a ++ "/" ++ b, "")
+  };
+
+let stringOfPresentEmployer = (presentEmployer: presentEmployer) =>
+  Printf.sprintf(
+    "
+     Employer Name: %s,
+     EmployerAddress: %s,
+     Phone Number: %s,
+     Start Date: %s,
+     Monthly Income: %s,
+     Duty: %s
+     ",
+    presentEmployer.employerName,
+    stringOfAddress(presentEmployer.employerAddress),
+    presentEmployer.phoneNum,
+    stringOfDate(presentEmployer.startDate),
+    switch (presentEmployer.monthlyIncome) {
+    | None => "N/A"
+    | Some(income) => string_of_int(income)
+    },
+    presentEmployer.duty,
+  );
+let stringOfPresentEmployerInfo = presentEmployerInfo =>
+  switch (presentEmployerInfo) {
+  | Explain(explain) => explain
+  | Employer(presentEmployer) => stringOfPresentEmployer(presentEmployer)
+  | ExplainAndEmployer(explainAndEmployer) =>
+    "Explain: "
+    ++ explainAndEmployer.explain
+    ++ stringOfPresentEmployer(explainAndEmployer.presentEmployer)
+  };
+
+let stringOfPreviousEmployer =
+    (previousEmployers: option(list(previousEmployer))) =>
+  switch (previousEmployers) {
+  | None => "N/A"
+  | Some(previousEmployers) =>
+    List.map(
+      (previousEmployer: previousEmployer) =>
+        Printf.sprintf(
+          "
+         Employer Name: %s,
+         EmployerAddress: %s,
+         Phone Number: %s,
+         Job Title: %s,
+         Supervisor Surname: %s,
+         Supervisor Given Name: %s,
+         Start Date: %s,
+         End Date: %s,
+         Duty: %s
+         ",
+          previousEmployer.employerName,
+          stringOfAddress(previousEmployer.employerAddress),
+          previousEmployer.phoneNum,
+          previousEmployer.jobTitle,
+          switch (previousEmployer.supervisorSurname) {
+          | Some(name) => name
+          | None => "N/A"
+          },
+          switch (previousEmployer.supervisorGivenName) {
+          | Some(name) => name
+          | None => "N/A"
+          },
+          stringOfDate(previousEmployer.startDate),
+          stringOfDate(previousEmployer.endDate),
+          previousEmployer.duty,
+        ),
+      previousEmployers,
+    )
+    |> List.fold_left((a, b) => a ++ "/" ++ b, "")
+  };
+
+let stringOfPreviousEducation =
+    (previousEducations: option(list(education))) =>
+  switch (previousEducations) {
+  | None => "N/A"
+  | Some(previousEducations) =>
+    List.map(
+      (previousEducation: education) =>
+        Printf.sprintf(
+          "
+         Institution Name: %s,
+         Institution Address: %s,
+         Phone Number: %s,
+         Course Of Study: %s,
+         Start Date: %s,
+         End Date: %s,
+         ",
+          previousEducation.institutionName,
+          stringOfAddress(previousEducation.employerAddress),
+          previousEducation.phoneNum,
+          previousEducation.courseOfStudy,
+          stringOfDate(previousEducation.startDate),
+          stringOfDate(previousEducation.endDate),
+        ),
+      previousEducations,
     )
     |> List.fold_left((a, b) => a ++ "/" ++ b, "")
   };
