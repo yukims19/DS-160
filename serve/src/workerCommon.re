@@ -949,3 +949,57 @@ let pluckOptionListRelativeMember =
       Failure("Name, Relationship, and Stay Status must be in same length"),
     )
   };
+
+let pluckPresentOccupation = makePluckerOne("Present_Occupation");
+
+let pluckPresentEmployerName = makePluckerOne("Present_Employer_Name");
+let pluckPresentEmployerAddress1 = makePluckerOne("Present_Employer_ADDR1");
+let pluckPresentEmployerAddress2 = makePluckerOne("Present_Employer_ADDR2");
+let pluckPresentEmployerAddressCity =
+  makePluckerOne("Present_Employer_ADDR_City");
+let pluckPresentEmployerAddressState =
+  makePluckerOne("Present_Employer_ADDR_State");
+let pluckPresentEmployerAddressPostalCode =
+  makePluckerOne("Present_Employer_ADDR_Postal_CD");
+let pluckPresentEmployerAddressCountry =
+  makePluckerOne("Present_Employer_ADDR_Country");
+
+let pluckPresentEmployerPhoneNum = makePluckerOne("Present_Employer_TEL");
+let pluckPresentEmployerStartDay =
+  makePluckerOne("Present_Employer_Start_Day");
+let pluckPresentEmployerStartMonth =
+  makePluckerOne("Present_Employer_Start_Month");
+let pluckPresentEmployerStartYear =
+  makePluckerOne("Present_Employer_Start_Year");
+let pluckPresentEmployerMonthlyIncome =
+  makePluckerOne("Present_Employer_MONTHLY_SALARY");
+let pluckPresentEmployerDuty = makePluckerOne("Present_Employer_Duty");
+
+let pluckPresentEmployerInfo =
+    (
+      employerName,
+      streetL1,
+      streetL2,
+      city,
+      state,
+      zipCode,
+      country,
+      phoneNum,
+      day,
+      month,
+      year,
+      income,
+      duty,
+    )
+    : DsDataTypes.presentEmployer => {
+  employerName: nonOptionString("Employer Name", employerName),
+  employerAddress: address(streetL1, streetL2, city, state, zipCode, country),
+  phoneNum: nonOptionString("Employer Name", phoneNum),
+  startDate: pluckDate(day, month, year),
+  monthlyIncome:
+    switch (income) {
+    | Some(income) => Some(int_of_string(income))
+    | None => None
+    },
+  duty: nonOptionString("Duty", duty),
+};
