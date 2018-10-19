@@ -1,28 +1,35 @@
 open WorkerCommon;
 open DsDataTypes;
 open CountryType;
-/*
- let stringOfPresentWETPageData = (p9Data: DsDataTypes.presentWET) =>
-   Printf.sprintf(
-     "
-       Father: %s,
-       Mother:%s,
-       Relatives :%s,",
-     stringOfPresentWETMember(p9Data.father),
-     stringOfPresentWETMember(p9Data.mother),
-     stringOfRelativeMember(p9Data.relative),
-   );*/
+
+let stringOfPresentWETPageData = (p10Data: DsDataTypes.presentWET) =>
+  Printf.sprintf(
+    "
+       Occupation: %s,
+       Detail: %s,",
+    OccupationType.stringOfOccupation(p10Data.occupation),
+    stringOfPresentEmployerInfo(p10Data.presentEmployerInfo),
+  );
 
 let presentWETPageData =
     (worksheetValues: worksheetValues)
     : DsDataTypes.presentWET => {
   occupation:
-    nonOptionString(
-      "Present Occupation",
-      pluckPresentOccupation(worksheetValues),
+    OccupationType.occupationOfStringOccupation(
+      nonOptionString(
+        "PresentOccupationRaw",
+        pluckPresentOccupationRaw(worksheetValues),
+      ),
     ),
   presentEmployerInfo:
     pluckPresentEmployerInfo(
+      OccupationType.occupationOfStringOccupation(
+        nonOptionString(
+          "PresentOccupationRaw",
+          pluckPresentOccupationRaw(worksheetValues),
+        ),
+      ),
+      pluckPresentOccupationExplain(worksheetValues),
       pluckPresentEmployerName(worksheetValues),
       pluckPresentEmployerAddress1(worksheetValues),
       pluckPresentEmployerAddress2(worksheetValues),
