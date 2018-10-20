@@ -330,8 +330,8 @@ type military = {
 };
 type additionalWET = {
   tribe: option(string),
-  lanuage: list(string),
-  travle: option(list(country)),
+  language: list(string),
+  travel: option(list(country)),
   charity: option(list(string)),
   specialSkill: option(string),
   military: option(list(military)),
@@ -450,6 +450,12 @@ let stringOfOptionDate = date =>
 let stringOfOptionString = (key, value) =>
   switch (value) {
   | Some(value) => value
+  | None => "No value found for " ++ key
+  };
+
+let stringOfOptionListString = (key, value) =>
+  switch (value) {
+  | Some(value) => value |> List.fold_left((a, b) => a ++ "/" ++ b, "")
   | None => "No value found for " ++ key
   };
 let stringOfOptionListNationalityInfo = otherNationality =>

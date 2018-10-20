@@ -1426,3 +1426,105 @@ let pluckPreviousEducation =
       ),
     )
   };
+
+let pluckAdditionalTribe = makePluckerOne("CLAN_TRIBE_NAME");
+let pluckAdditionalLanguate = makePluckerMulti("LANGUAGE_NAME");
+let pluckAdditionalTravel = makePluckerMulti("COUNTRIES_VISITED");
+let pluckAdditionalCharity = makePluckerMulti("Charity_ORG_NAME");
+let pluckAdditionalSpecialSkill = makePluckerOne("SPECIALIZED_SKILLS_EXPL");
+let pluckAdditonalRebelExpl = makePluckerOne("Rebel_Group_Expl");
+
+let pluckAdditionalMilitaryCounty = makePluckerMulti("MILITARY_CNTRY");
+let pluckAdditionalMilitaryBranch = makePluckerMulti("MILITARY_Branch");
+let pluckAdditionalMilitaryRank = makePluckerMulti("MILITARY_Rank");
+let pluckAdditionalMilitarySpeciality =
+  makePluckerMulti("MILITARY_Specialty");
+let pluckAdditionalMilitaryStartDay = makePluckerMulti("MILITARY_Start_Day");
+let pluckAdditionalMilitaryStartMonth =
+  makePluckerMulti("MILITARY_Start_Month");
+let pluckAdditionalMilitaryStartYear =
+  makePluckerMulti("MILITARY_Start_Year");
+let pluckAdditionalMilitaryEndDay = makePluckerMulti("MILITARY_End_Day");
+let pluckAdditionalMilitaryEndMonth = makePluckerMulti("MILITARY_End_Month");
+let pluckAdditionalMilitaryEndYear = makePluckerMulti("MILITARY_End_Year");
+
+let pluckAdditionalMilitary =
+    (
+      countries,
+      branches,
+      ranks,
+      specialities,
+      startDays,
+      startMonths,
+      startYears,
+      endDays,
+      endMonths,
+      endYears,
+    )
+    : option(list(DsDataTypes.military)) =>
+  switch (
+    countries,
+    branches,
+    ranks,
+    specialities,
+    startDays,
+    startMonths,
+    startYears,
+    endDays,
+    endMonths,
+    endYears,
+  ) {
+  | (None, None, None, None, None, None, None, None, None, None) => None
+  | (
+      Some(countries),
+      Some(branches),
+      Some(ranks),
+      Some(specialities),
+      Some(startDays),
+      Some(startMonths),
+      Some(startYears),
+      Some(endDays),
+      Some(endMonths),
+      Some(endYears),
+    ) =>
+    let startDate = pluckListDate(startDays, startMonths, startYears);
+    let endDate = pluckListDate(endDays, endMonths, endYears);
+    let listLength = List.length(countries);
+    if (listLength == List.length(branches)
+        && listLength == List.length(ranks)
+        && listLength == List.length(specialities)
+        && listLength == List.length(startDate)
+        && listLength == List.length(endDate)) {
+      Some(
+        List.mapi(
+          (idx, country) => (
+            {
+              country,
+              branch: List.nth(branches, idx),
+              rank: List.nth(ranks, idx),
+              speciality: List.nth(specialities, idx),
+              startDate: List.nth(startDate, idx),
+              endDate: List.nth(endDate, idx),
+            }: DsDataTypes.military
+          ),
+          countries,
+        ),
+      );
+    } else {
+      raise(
+        Failure(
+          "The Following Fields must be in same length:
+             countries, branchs, ranks, specialities, startDays, startMonths, startyears, endDays, endMonths, endEYars.
+             Please enter N/A for unknown fields",
+        ),
+      );
+    };
+  | _ =>
+    raise(
+      Failure(
+        "The Following Fields must be in same length:
+       countries, branchs, ranks, specialities, startDays, startMonths, startyears, endDays, endMonths, endEYars.
+       Please enter N/A for unknown fields",
+      ),
+    )
+  };

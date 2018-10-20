@@ -173,6 +173,14 @@ let constructPageData = sheetData =>
         "Got P11Data: %s",
         PreviousWorkEducationTraining.stringOfPreviousWETPageData(p11Data),
       );
+      let p12Data =
+        AdditionalWorkEducationTraining.additionalWETPageData(sheetData);
+      OneLog.infof(
+        "Got P12Data: %s",
+        AdditionalWorkEducationTraining.stringOfAdditionalWETPageData(
+          p12Data,
+        ),
+      );
       Deferred.return();
     }
   );
